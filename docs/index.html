@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dimensionamento de Enfermagem · WISN/WPSN</title>
+<meta name="description" content="Aplicativo para Windows que calcula o quadro de enfermeiros e técnicos pelo método WISN/WPSN (Parecer Normativo COFEN 1/2024), importa e exporta as planilhas do dimensionamento.">
+<link rel="icon" href="app/icon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --teal-900: #0B3D33;
+    --teal-800: #0F5A4A;
+    --teal-700: #0F6B5C;
+    --mint-100: #E8F5F0;
+    --mint-200: #C9E9DE;
+    --mint-300: #8FD3C2;
+    --ink: #10231F;
+    --ink-600: #42564F;
+    --ink-500: #647A73;
+    --line: #DCE7E2;
+    --paper: #FFFFFF;
+    --bg: #F6FAF8;
+    --amber: #9A5B00;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--teal-700); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  header.top {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .top .wrap { display: flex; align-items: center; gap: 12px; height: 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-weight: 700; }
+  .brand img { width: 34px; height: 34px; border-radius: 9px; }
+  .brand span { display: block; font-size: 11px; font-weight: 500; color: var(--ink-500); letter-spacing: .02em; }
+  .top nav { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  .top nav a {
+    text-decoration: none; color: var(--ink-600); font-size: 14px;
+    padding: 8px 12px; border-radius: 9px;
+  }
+  .top nav a:hover { background: var(--mint-100); color: var(--teal-800); }
+  .hero { padding: 64px 0 48px; }
+  .hero .wrap { display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--teal-700); background: var(--mint-100);
+    border: 1px solid var(--mint-200); padding: 6px 12px; border-radius: 999px;
+  }
+  h1 { font-size: clamp(32px, 4.2vw, 50px); line-height: 1.06; letter-spacing: -.035em; margin: 18px 0 16px; }
+  .lead { font-size: 17px; color: var(--ink-600); max-width: 54ch; margin: 0 0 26px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    text-decoration: none; font-weight: 600; font-size: 15px;
+    padding: 13px 20px; border-radius: 12px; border: 1px solid transparent;
+    transition: transform .15s ease, background .15s ease;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: var(--teal-700); color: #fff; }
+  .btn-primary:hover { background: var(--teal-800); }
+  .btn-ghost { background: #fff; border-color: var(--line); color: var(--ink); }
+  .btn-ghost:hover { background: var(--mint-100); }
+  .fine { font-size: 12.5px; color: var(--ink-500); margin-top: 16px; }
+  .art {
+    position: relative; min-height: 300px; border-radius: 26px;
+    background: radial-gradient(600px 300px at 100% 0%, rgba(143,211,194,.55), transparent 70%), linear-gradient(150deg,#fff,#EEF8F4);
+    border: 1px solid var(--line); padding: 26px;
+  }
+  .stat {
+    position: absolute; background: #fff; border: 1px solid var(--line);
+    border-radius: 16px; padding: 14px 18px; box-shadow: 0 14px 34px -20px rgba(11,61,51,.45);
+  }
+  .stat small { display: block; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-500); font-weight: 700; }
+  .stat strong { font-size: 30px; letter-spacing: -.03em; color: var(--teal-900); }
+  .stat-a { top: 22px; left: 22px; transform: rotate(-3deg); }
+  .stat-b { top: 26px; right: 22px; transform: rotate(2.5deg); background: var(--teal-800); border-color: var(--teal-800); }
+  .stat-b strong { color: #fff; }
+  .stat-b small { color: rgba(255,255,255,.7); }
+  .bars { position: absolute; left: 26px; right: 26px; bottom: 22px; height: 128px; display: flex; align-items: flex-end; gap: 12px; }
+  .bars i { flex: 1; border-radius: 8px 8px 4px 4px; background: linear-gradient(180deg,var(--mint-200),#EAF7F2); border: 1px solid #CFE9E0; }
+  .bars i.on { background: linear-gradient(180deg,var(--teal-700),#12705F); border-color: var(--teal-700); }
+  section { padding: 40px 0; }
+  h2 { font-size: 26px; letter-spacing: -.02em; margin: 0 0 6px; }
+  .sub { color: var(--ink-500); margin: 0 0 24px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 22px;
+  }
+  .card h3 { margin: 12px 0 6px; font-size: 16.5px; }
+  .card p { margin: 0; color: var(--ink-600); font-size: 14px; }
+  .ico {
+    width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+    background: var(--mint-100); color: var(--teal-700);
+  }
+  .ico svg { width: 21px; height: 21px; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; counter-reset: s; }
+  .step { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 22px; position: relative; }
+  .step::before {
+    counter-increment: s; content: counter(s);
+    display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 9px;
+    background: var(--teal-700); color: #fff; font-weight: 700; font-size: 13px; margin-bottom: 10px;
+  }
+  .step h3 { margin: 0 0 6px; font-size: 16px; }
+  .step p { margin: 0; font-size: 14px; color: var(--ink-600); }
+  .note {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--mint-100); border: 1px solid var(--mint-200);
+    border-radius: 18px; padding: 22px;
+  }
+  .note strong { display: block; margin-bottom: 4px; }
+  .note p { margin: 0; color: var(--ink-600); font-size: 14px; }
+  .fineprint { font-size: 13px; color: var(--ink-500); }
+  footer { border-top: 1px solid var(--line); background: #fff; padding: 34px 0; margin-top: 20px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 18px; justify-content: space-between; align-items: center; }
+  footer nav { display: flex; flex-wrap: wrap; gap: 18px; }
+  footer nav a { color: var(--ink-600); text-decoration: none; font-size: 13.5px; }
+  footer nav a:hover { color: var(--teal-700); }
+  footer p { margin: 0; font-size: 13px; color: var(--ink-500); }
+  @media (max-width: 860px) {
+    .hero .wrap { grid-template-columns: 1fr; gap: 28px; }
+    .art { min-height: 260px; }
+    .top nav a:not(.nav-strong) { display: none; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./">
+      <img src="app/icon.svg" alt="">
+      <div>Dimensionamento de Enfermagem<span>wavizo</span></div>
+    </a>
+    <nav aria-label="Navegação">
+      <a href="#recursos">Recursos</a>
+      <a href="#como">Como funciona</a>
+      <a href="app/">Ver aplicativo</a>
+      <a class="nav-strong" href="https://apps.microsoft.com/detail/9MV9H9HPQ0HB">Microsoft Store</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">Parecer Normativo COFEN 1/2024</span>
+      <h1>Quantos enfermeiros e técnicos sua unidade precisa?</h1>
+      <p class="lead">
+        Informe a produção e as ausências. O aplicativo calcula o quadro pelo método
+        WISN/WPSN, mostra o saldo por categoria e gera as duas planilhas do
+        dimensionamento prontas para atualizar o documento oficial.
+      </p>
+      <div class="actions">
+        <a class="btn btn-primary" href="app/">Abrir aplicativo</a>
+        <a class="btn btn-ghost" href="https://apps.microsoft.com/detail/9MV9H9HPQ0HB">Baixar para Windows</a>
+      </div>
+      <p class="fine">
+        Funciona offline, sem cadastro e sem enviar dados para servidores próprios.
+        A sincronização com o Google Drive é opcional.
+      </p>
+    </div>
+    <div class="art" aria-hidden="true">
+      <div class="stat stat-a"><small>Equipe atual</small><strong>4</strong></div>
+      <div class="stat stat-b"><small>Necessário (WISN)</small><strong>3,6</strong></div>
+      <div class="bars">
+        <i style="height:48%"></i><i style="height:72%"></i><i style="height:56%"></i>
+        <i class="on" style="height:92%"></i><i style="height:64%"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section id="recursos">
+  <div class="wrap">
+    <h2>Feito para quem já usa a planilha</h2>
+    <p class="sub">O mesmo cálculo, sem fórmulas quebradas e sem digitar tudo de novo.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
+        <h3>Importa o Excel atual</h3>
+        <p>Lê produção, tempos, cuidados indiretos, ausências e o quadro atual direto do arquivo que a equipe já preenche.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg></div>
+        <h3>Calcula pelo WISN/WPSN</h3>
+        <p>TTD, horas de cuidado direto, percentual indireto e quadro necessário por categoria, com memória de cálculo.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12"/><path d="m7 11 5 5 5-5"/><path d="M4 18v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/></svg></div>
+        <h3>Exporta as abas oficiais</h3>
+        <p>Gera as abas <strong>DIMENSIONAMENTO -ENF</strong> e <strong>DIMENSIONAMENTO - T.</strong> com o período no nome, além da avaliação e da memória de cálculo.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.2 3.5 3.5 0 0 0 7 18Z"/></svg></div>
+        <h3>Backup opcional no Drive</h3>
+        <p>Use a mesma conta Google em outro computador. O arquivo fica em uma área privada do aplicativo no Drive.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.8"/><path d="M17.5 14.2A5 5 0 0 1 20.5 19"/></svg></div>
+        <h3>Equipe flexível</h3>
+        <p>Adicione, renomeie, mude a categoria ou marque afastamentos. O quadro é sempre o retrato de hoje.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
+        <h3>Presunção de presença</h3>
+        <p>O que não foi registrado como ausência conta como presença, reduzindo o esforço de preenchimento.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="como">
+  <div class="wrap">
+    <h2>Como funciona</h2>
+    <p class="sub">Três etapas, do arquivo antigo ao documento novo.</p>
+    <div class="steps">
+      <div class="step">
+        <h3>Importe ou comece do zero</h3>
+        <p>Traga a planilha de dimensionamento ou informe apenas a produção anual e a equipe atual.</p>
+      </div>
+      <div class="step">
+        <h3>Revise equipe e ausências</h3>
+        <p>Confira o quadro por categoria, férias, licenças e feriados. Os números são atualizados na hora.</p>
+      </div>
+      <div class="step">
+        <h3>Exporte e assine</h3>
+        <p>Gere o Excel com as abas do dimensionamento, imprima em PDF e anexe ao processo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="note">
+      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+      <div>
+        <strong>Privacidade por padrão</strong>
+        <p>
+          O cálculo acontece no seu computador. O aplicativo não pede nome de pacientes,
+          prontuário ou qualquer dado clínico. Se você conectar o Google Drive, apenas o
+          arquivo de backup do dimensionamento é enviado, em uma pasta privada do app.
+          <a href="politica-de-privacidade.html">Ler a política de privacidade</a>.
+        </p>
+      </div>
+    </div>
+    <p class="fineprint" style="margin-top:18px">
+      Aplicativo independente, desenvolvido por wavizo. Não é um sistema oficial de órgão
+      público, prontuário eletrônico ou dispositivo médico. O resultado é uma referência de
+      planejamento e deve ser validado pelo responsável técnico de enfermagem.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>© 2026 wavizo · Dimensionamento de Enfermagem · v1.0.0</p>
+    <nav aria-label="Links legais">
+      <a href="politica-de-privacidade.html">Privacidade</a>
+      <a href="termos-de-servico.html">Termos</a>
+      <a href="aviso-legal.html">Aviso legal</a>
+      <a href="https://github.com/wavizo-bot/Redimensionamento-de-enfermagem">GitHub</a>
+      <a href="mailto:mmr05@hotmail.com">mmr05@hotmail.com</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

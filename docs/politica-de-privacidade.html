@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de Privacidade · Dimensionamento de Enfermagem</title>
+<meta name="description" content="Como o aplicativo Dimensionamento de Enfermagem trata os dados, incluindo o backup opcional no Google Drive.">
+<style>
+  :root { --teal:#0F6B5C; --teal-dark:#0B3D33; --mint:#E8F5F0; --line:#DCE7E2; --ink:#10231F; --muted:#5C716A; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Segoe UI",system-ui,Arial,sans-serif; background:#F6FAF8; color:var(--ink); line-height:1.7; }
+  header { background:#fff; border-bottom:1px solid var(--line); padding:16px 0; }
+  header .wrap { display:flex; align-items:center; gap:10px; }
+  header a { color:var(--ink); text-decoration:none; font-weight:700; }
+  header a.logo { display:flex; align-items:center; gap:10px; }
+  header img { width:30px; height:30px; border-radius:8px; }
+  header nav { margin-left:auto; display:flex; gap:16px; font-weight:500; font-size:14px; }
+  header nav a { color:var(--muted); }
+  .wrap { max-width:820px; margin:0 auto; padding:0 22px; }
+  main { padding:44px 0 60px; }
+  .tag { display:inline-block; background:var(--mint); color:var(--teal); font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; padding:5px 11px; border-radius:999px; }
+  h1 { font-size:34px; letter-spacing:-.03em; margin:14px 0 6px; }
+  .date { color:var(--muted); font-size:14px; margin:0 0 28px; }
+  h2 { font-size:19px; margin:34px 0 8px; color:var(--teal-dark); }
+  p, li { color:#2C403A; }
+  ul { padding-left:22px; }
+  .box { background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px 20px; margin:20px 0; }
+  .box p { margin:0; font-size:14.5px; }
+  a { color:var(--teal); }
+  footer { border-top:1px solid var(--line); background:#fff; padding:24px 0; font-size:13px; color:var(--muted); }
+  footer .wrap { display:flex; flex-wrap:wrap; gap:14px; justify-content:space-between; }
+  footer nav { display:flex; gap:16px; flex-wrap:wrap; }
+  footer a { color:var(--muted); text-decoration:none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="logo" href="./"><img src="app/icon.svg" alt=""> Dimensionamento de Enfermagem</a>
+    <nav aria-label="Links"><a href="./">Início</a><a href="termos-de-servico.html">Termos</a><a href="aviso-legal.html">Aviso legal</a></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <span class="tag">Documento legal</span>
+  <h1>Política de Privacidade</h1>
+  <p class="date">Última atualização: 27 de outubro de 2026 · versão 1.0</p>
+
+  <p>
+    Esta política explica quais dados o aplicativo <strong>Dimensionamento de Enfermagem</strong>
+    (publicado por <strong>wavizo</strong>) trata, onde eles ficam e como você pode exercer seus
+    direitos. O aplicativo é uma ferramenta de cálculo e planejamento de pessoal, não um
+    prontuário e não solicita dados de pacientes.
+  </p>
+
+  <h2>1. Dados que o aplicativo trata</h2>
+  <ul>
+    <li><strong>Dados do dimensionamento:</strong> nome e cidade da unidade (opcionais), período, jornada, produção anual, tempos médios, cuidados indiretos, ausências e nomes/quantidades de profissionais.</li>
+    <li><strong>Dados de identificação profissional informados por você:</strong> nome do responsável técnico, COREN e cidade/data de assinatura, usados apenas para preencher o documento exportado e a impressão.</li>
+    <li><strong>Conta Google (somente se você conectar o Drive):</strong> endereço de e-mail associado à conta e uma credencial de renovação (refresh token) para acessar o espaço privado do aplicativo no Google Drive.</li>
+  </ul>
+  <p>
+    O aplicativo não coleta senha do Google, não acessa seus arquivos pessoais do Drive, não
+    usa câmera, microfone, localização, contatos ou identificadores de publicidade, e não
+    inclui ferramentas de análise, rastreamento ou anúncios.
+  </p>
+
+  <h2>2. Onde os dados ficam</h2>
+  <ul>
+    <li><strong>No seu computador:</strong> os dimensionamentos são gravados no armazenamento local do aplicativo, dentro do seu perfil do Windows.</li>
+    <li><strong>Credencial do Google:</strong> o token é gravado no seu perfil, protegido pelo DPAPI do Windows (criptografia vinculada à sua conta de usuário).</li>
+    <li><strong>Google Drive (opcional):</strong> quando você escolhe enviar, um único arquivo de backup é gravado na pasta privada do aplicativo (<em>appDataFolder</em>). Essa pasta não aparece na interface normal do Drive e só é acessível por este aplicativo com a sua autorização.</li>
+  </ul>
+  <p>
+    Não existe servidor próprio da wavizo. Fora do Google Drive, nenhum dado sai do seu
+    computador. Os arquivos Excel gerados são salvos onde você escolher.
+  </p>
+
+  <h2>3. Para que os dados são usados</h2>
+  <ul>
+    <li>Calcular o quadro necessário de enfermeiros e de técnicos/auxiliares e exibir os resultados.</li>
+    <li>Gerar as planilhas e a impressão do dimensionamento que você solicitar.</li>
+    <li>Manter seus dimensionamentos entre sessões e, se você autorizar, sincronizá-los entre computadores usando a mesma conta Google.</li>
+  </ul>
+  <p>Os dados não são vendidos, alugados, usados para publicidade, perfilamento ou treinamento de modelos.</p>
+
+  <h2>4. Serviços do Google</h2>
+  <p>
+    A conexão usa o Google OAuth 2.0 com PKCE e o escopo mínimo
+    <code>https://www.googleapis.com/auth/drive.appdata</code>. Você pode revogar o acesso a qualquer
+    momento no aplicativo (desconectar) ou em
+    <a href="https://myaccount.google.com/permissions" rel="noopener">myaccount.google.com/permissions</a>.
+  </p>
+  <div class="box">
+    <p>
+      O uso e a transferência de informações recebidas das APIs do Google pelo aplicativo
+      Dimensionamento de Enfermagem seguem a
+      <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener">Política de Dados do Usuário dos Serviços de API do Google</a>,
+      incluindo os requisitos de Uso Limitado (Limited Use).
+    </p>
+  </div>
+
+  <h2>5. Segurança</h2>
+  <p>
+    A credencial do Google é protegida pelo DPAPI e as chamadas ao Drive usam HTTPS. O acesso
+    ao backup depende da autorização concedida por você. Nenhum método é infalível: proteja
+    sua conta do Windows e sua conta Google, e mantenha uma cópia dos arquivos exportados.
+  </p>
+
+  <h2>6. Retenção e exclusão</h2>
+  <ul>
+    <li>Os dados locais permanecem até você apagar o dimensionamento dentro do aplicativo ou desinstalá-lo.</li>
+    <li>O backup no Drive permanece até ser substituído por um novo envio ou removido na sua conta Google. Desconectar o aplicativo não apaga o arquivo; para excluí-lo, use a página de permissões do Google ou solicite pelo contato abaixo.</li>
+    <li>Ao desinstalar o aplicativo, o token local é removido; o arquivo no Drive continua na sua conta até ser apagado.</li>
+  </ul>
+
+  <h2>7. Seus direitos (LGPD e GDPR)</h2>
+  <p>
+    Nos termos da Lei Geral de Proteção de Dados (Lei 13.709/2018) e do Regulamento Geral de
+    Proteção de Dados (GDPR), você pode solicitar confirmação de tratamento, acesso,
+    correção, portabilidade, eliminação e informação sobre compartilhamento. Como os dados
+    ficam no seu dispositivo e na sua conta Google, a maior parte desses direitos é exercida
+    diretamente no aplicativo. Para os demais, use o contato abaixo.
+  </p>
+
+  <h2>8. Crianças e adolescentes</h2>
+  <p>O aplicativo é destinado a profissionais de gestão em saúde e não é dirigido a menores de 18 anos.</p>
+
+  <h2>9. Alterações desta política</h2>
+  <p>
+    Esta política pode ser atualizada para refletir mudanças no aplicativo ou na legislação.
+    A data no topo indica a última revisão. A versão vigente é sempre publicada nesta página.
+  </p>
+
+  <h2>10. Contato do controlador</h2>
+  <p>
+    wavizo · Encarregado de dados: Maycon<br>
+    E-mail: <a href="mailto:mmr05@hotmail.com">mmr05@hotmail.com</a><br>
+    Telefone: <a href="tel:+5511978831938">(11) 97883-1938</a>
+  </p>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 wavizo · Dimensionamento de Enfermagem</span>
+    <nav><a href="./">Início</a><a href="termos-de-servico.html">Termos de uso</a><a href="aviso-legal.html">Aviso legal</a></nav>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,20 @@
+Build script - Dimensionamento de Enfermagem
+==============================================
+
+USO:
+  powershell -ExecutionPolicy Bypass -File Build-MSIX.ps1
+
+O que o script faz:
+1. Prepara a pasta de staging
+2. Copia os arquivos HTML/CSS/JS
+3. Executa npm install e build
+4. Gera o pacote MSIX
+
+REQUISITOS:
+- Node.js instalado (versao 18+)
+- npm instalado
+- VSBuild ou SDK Windows 10+ para criar MSIX
+
+DEPOIS DE BULID:
+- O MSIX sera gerado em: C:\APPS\Dimensionamento de enfemagem\msix\*
+- Siga os passos no Partner Center

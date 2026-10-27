@@ -1,0 +1,10 @@
+export const APP_NAME = 'Dimensionamento de Enfermagem';
+export const APP_PUBLISHER = 'wavizo';
+export const CONTACT_EMAIL = 'mmr05@hotmail.com';
+export const CONTACT_PHONE = '11978831938';
+export const CONTACT_PHONE_LABEL = '(11) 97883-1938';
+export const SITE_URL = 'https://wavizo-bot.github.io/Redimensionamento-de-enfermagem';
+export const PRIVACY_URL = `${SITE_URL}/politica-de-privacidade.html`;
+export const TERMS_URL = `${SITE_URL}/termos-de-servico.html`;
+export const LEGAL_URL = `${SITE_URL}/aviso-legal.html`;
+export const REPO_URL = 'https://github.com/wavizo-bot/Redimensionamento-de-enfermagem';

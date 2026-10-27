@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap rescap">
+  <Identity
+    Name="wavizo.Dimensionamentodeenfermagem"
+    Publisher="CN=57BB464E-553F-45B6-A4ED-B253157408EB"
+    Version="1.0.0.0"
+    ProcessorArchitecture="x64" />
+  <Properties>
+    <DisplayName>Dimensionamento de Enfermagem</DisplayName>
+    <PublisherDisplayName>wavizo</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <Description>Calculo de pessoal de enfermagem pelo metodo WISN (Parecer COFEN 1/2024), com importacao e exportacao das planilhas oficiais e backup opcional no Google Drive.</Description>
+  </Properties>
+  <Resources>
+    <Resource Language="pt-BR" />
+    <Resource Language="en" />
+  </Resources>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+    <Capability Name="internetClient" />
+  </Capabilities>
+  <Applications>
+    <Application Id="App" Executable="DimensionamentoDeEnfermagem.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="Dimensionamento de Enfermagem"
+        Description="Calculo de pessoal de enfermagem pelo metodo WISN."
+        BackgroundColor="#0F6B5C"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
+        <uap:SplashScreen Image="Assets\SplashScreen.png" BackgroundColor="#0F6B5C" />
+      </uap:VisualElements>
+    </Application>
+  </Applications>
+</Package>

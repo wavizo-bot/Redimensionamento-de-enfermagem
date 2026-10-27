@@ -1,0 +1,187 @@
+﻿DIMENSIONAMENTO DE ENFERMAGEM — MANUAL DO PROJETO
+Atualizado em 27/10/2026 · versão do app 1.0.0 (MSIX 1.0.0.0)
+===============================================================================
+
+1. O QUE É
+==========
+Aplicativo Windows (MSIX) que calcula o quadro de pessoal de enfermagem pelo
+método WISN/WPSN, conforme o Parecer Normativo COFEN nº 1/2024. O usuário
+importa a planilha de dimensionamento que já usa (ou digita só os totais),
+revisa equipe e ausências, vê o resultado e exporta as abas oficiais em Excel.
+
+Objetivo de produto: mínimo esforço para a gestora. Tudo que não estiver
+registrado como ausência é considerado presença.
+
+O app NÃO cita unidade real, não parece sistema de órgão público, não usa dados
+de pacientes e funciona offline. A sincronização com o Google Drive é opcional.
+
+2. IDENTIDADE DE LOJA
+=====================
+Name (Package/Identity):        wavizo.Dimensionamentodeenfermagem
+Publisher:                      CN=57BB464E-553F-45B6-A4ED-B253157408EB
+PublisherDisplayName:           wavizo
+Package Family Name (PFN):      wavizo.Dimensionamentodeenfermagem_c5p81jb0en0bm
+Store ID:                       9MV9H9HPQ0HB
+Store listing:                  https://apps.microsoft.com/detail/9MV9H9HPQ0HB
+Exibido ao usuário:             "Dimensionamento de Enfermagem" / wavizo
+Repositório:                    https://github.com/wavizo-bot/Redimensionamento-de-enfermagem
+GitHub Pages (docs/):           https://wavizo-bot.github.io/Redimensionamento-de-enfermagem
+Contato público:                mmr05@hotmail.com / (11) 97883-1938
+
+Versões:
+- 1.0.0 / 1.0.0.0 — primeiro envio preparado (não enviado ainda). A próxima
+  versão enviada deve ser maior (1.0.1.0 ou 1.1.0.0).
+
+3. ESTRUTURA DE PASTAS
+======================
+src/
+  main.tsx, App.tsx          Casca do app, navegação por estado, persistência
+  types.ts                   Tipos do domínio (Project, Workspace, resultados)
+  lib/
+    calc.ts                  Cálculo WISN/WPSN e nomes exatos das abas
+    defaults.ts              Procedimentos, tempos, indiretos, projeto exemplo
+    storage.ts               localStorage + normalização do workspace
+    importXlsx.ts            Leitura da planilha oficial (ExcelJS)
+    exportXlsx.ts            Geração do Excel de 4 abas com fórmulas e cache
+    drive.ts                 Ponte JS <-> host (OAuth/Drive/exportar)
+    site.ts                  Nome, contato e URLs públicas
+  views/                     Home, Setup, Team, Production, Absence, Results
+  components/                ui.tsx, Icons.tsx, ImportModal, SyncModal, HelpModal
+  styles/global.css          UI responsiva + estilos de impressão
+public/icon.svg              Ícone web
+tools/verify.ts              Verificação de cálculo/exportação/importação
+msix/
+  src/Launcher.cs            Host C# (WinForms + WebView2 + Drive + SaveFile)
+  AppxManifest.xml           Manifesto base (versão carimbada no build)
+  Build-MSIX.ps1             Build completo (web -> staging -> pack -> sign)
+  make-assets.ps1            Gera ícones do pacote e artes da loja
+  staging/                   Gerado (NÃO versionar)
+  output/                    MSIX gerado (NÃO versionar)
+docs/                        GitHub Pages: landing + legal + app/ (demo)
+store/                       Artes de loja geradas (ícone 1080, feature 1024x500)
+entregas/windows/            Pacote para envio (NÃO versionar)
+manual.txt, log.txt          Documentação de retomada / diário
+
+4. FLUXO DO APLICATIVO (5 ETAPAS)
+=================================
+1. Unidade e jornada — nome/cidade opcionais, período, semanas/dias/horas,
+   responsável técnico, COREN, cidade/data de assinatura.
+2. Equipe — "Listar por nome" ou "Só a quantidade". Aceita adicionar, renomear,
+   trocar categoria (Enfermeiro / Técnico / Auxiliar), marcar afastado/inativo.
+3. Produção — 10 procedimentos x produção anual e tempo médio (h). Tempo padrão
+   restaurable. Mostra horas diretas e o quadro necessário em tempo real.
+4. Ausências — média por profissional: feriados, férias, licença de saúde,
+   outras licenças. Feriados podem ser contados automaticamente.
+5. Resultado — quadro atual x necessário x saldo por categoria, memória de
+   cálculo, ausências, botões Imprimir/PDF e Exportar Excel.
+
+Importação: prioriza a aba DIMENSIONAMENTO (produção C21:C30, tempos D21:D30,
+indiretos C35:C48, quadro G9, unidade A5); ausências em AJ4/AJ6/AJ8/AJ10.
+Quando há contagem oficial, importa no modo "Só a quantidade" e limita nomes à
+quantidade oficial.
+
+Exportação (4 abas):
+  DIMENSIONAMENTO -ENF - <tag>   (nome exato exigido, máx. 31 caracteres)
+  DIMENSIONAMENTO - <tag> - T.   (nome exato exigido)
+  AVALIAÇÃO DIM. - <tag>
+  MEMÓRIA DE CÁLCULO
+Cada célula com fórmula também recebe `result` (cache), então o arquivo abre
+com valores visíveis mesmo antes de recalcular.
+
+5. CÁLCULO (RESUMO)
+===================
+- Dias previstos = semanas x dias/semana.
+- Dias trabalhados = dias previstos - feriados - férias - licença - outras.
+- TTD (horas/ano) = dias trabalhados x horas/dia.
+- Horas diretas = soma(produção x tempo médio).
+- Quadro necessário = (horas diretas / TTD) / (1 - % indiretos).
+- Saldo = quadro atual - quadro necessário.
+Valores de referência conferidos com a planilha oficial 2025/2026:
+  ENF: TTD 1831,2 h · diretas 3.570,33 h · indiretos 45,6% · necessário 3,58404686
+  TEC: TTD 1609,866664 h · diretas 8.914,07 h · indiretos 42,2% · necessário 9,57984085
+O núcleo mantém precisão total; o arredondamento é só de exibição.
+
+6. GOOGLE DRIVE (OPCIONAL)
+==========================
+- Client OAuth do tipo Desktop, PKCE, loopback http://localhost:PORTA (nunca
+  127.0.0.1 — regra W13), escopo drive.appdata.
+- Token em DPAPI no perfil do usuário: %LOCALAPPDATA%\wavizo\
+  DimensionamentoDeEnfermagem\google-token.dat
+- Backup único: dimensionamento-backup.json na pasta privada do app (appDataFolder).
+- O host C# é o único que fala com o Google; o JS chama a ponte
+  window.dimensionamentoDrive (GetState, Login, Logout, CheckRemote, Upload,
+  Download, GetAppVersion, SaveFile, Quit).
+- Conflito de horários é sempre decisão do usuário; o app nunca sobe base vazia
+  nem apaga a nuvem sozinho; backups < 1 KB são ignorados.
+
+ONDE ESTÃO as credenciais (nunca versionar conteúdo):
+  C:\APPS\ID.OAuth\client_secret_20831325533-hmppc1d04i0g681s85ilrs83cal0pm5f.apps.googleusercontent.com.json
+O Build-MSIX.ps1 copia esse arquivo como msix\staging\google-client.json.
+
+7. BUILD E TESTE
+================
+Requisitos: Node 18+, .NET Framework 4.8 (csc), Windows SDK 10.0.26100
+(makeappx/signtool), runtime WebView2, DLLs do WebView2 em
+C:\APPS\Caderno de Cuidado\MSIX\staging (fonte padrão do parâmetro
+-WebView2Source).
+
+  powershell -ExecutionPolicy Bypass -File msix\Build-MSIX.ps1
+  powershell -ExecutionPolicy Bypass -File msix\Build-MSIX.ps1 -Version 1.0.1.0
+
+O script: npm build -> dist copiado para staging\www e docs\app -> ícones ->
+csc do Launcher.cs -> AppxManifest com a versão -> client OAuth -> makeappx ->
+signtool (se existir devcert.pfx; a Store reassina no envio).
+
+Conferência obrigatória do pacote (W3):
+  makeappx unpack /p <msix> /d <pasta> /o
+  conferir Identity (Name/Publisher/Version), MinVersion 10.0.17763.0, arquivos
+  e ausência de pastas *.WebView2.
+
+Teste rápido do host sem instalar:
+  msix\staging\DimensionamentoDeEnfermagem.exe
+(janela WebView2; cria perfil em %LOCALAPPDATA%\wavizo\DimensionamentoDeEnfermagem)
+
+Verificação de cálculo/importação/exportação:
+  npx esbuild tools/verify.ts --bundle --platform=node --format=cjs
+    --target=node18 --outfile=tools/verify.cjs
+  node tools/verify.cjs
+
+8. ARMADILHAS CONHECIDAS
+========================
+- O host object NÃO pode se chamar "sync" (reservado pelo WebView2). Usamos
+  "dimensionamentoDrive" e mantemos referência enraizada no formulário.
+- Nome da aba de avaliação deve ter <= 31 caracteres (limite do Excel).
+- Feriados nacionais calculados: 9 no ciclo 2025/2026 (inclui Consciência Negra),
+  a planilha oficial usa 8. Na importação, useHolidayCalendar=false preserva o
+  valor oficial.
+- As abas de produção trazem substitutos/duplicados: limitar nomes à quantidade
+  oficial (4 ENF / 7 TEC) e deduplicar sem acento.
+- O Vite observa a raiz; ignorar msix/, docs/, dist/ e entregas/ evita EBUSY
+  quando o csc grava temporários no staging.
+- Build-MSIX.ps1 não pode substituir "Version=" cegamente: MinVersion também
+  casa com o regex. Usar lookbehind de espaço.
+- WebView2: window.print abre a impressão do Windows; download de Blob funciona,
+  e no app instalado o Excel é salvo pelo diálogo nativo (SaveFile).
+- Nunca empacotar perfil WebView2 nem google-client.json no git.
+
+9. PÁGINAS PÚBLICAS
+===================
+docs/index.html                  Apresentação (GitHub Pages)
+docs/politica-de-privacidade.html
+docs/termos-de-servico.html
+docs/aviso-legal.html
+docs/app/                        Build web de demonstração (gerado no build)
+Cópias na raiz (politica..., termos..., aviso...) para a regra 1.3.
+
+A política cita a Google API Services User Data Policy / Limited Use, exigida
+para o OAuth. O aviso legal deixa claro que o app é independente, não é sistema
+oficial, prontuário ou dispositivo médico.
+
+10. PENDÊNCIAS
+==============
+- Enviar o MSIX ao Partner Center (Store ID 9MV9H9HPQ0HB) e preencher listagem.
+- Artes de loja: usar store/icon-1080.png, store/icon-512.png,
+  store/feature-graphic-1024x500.png e capturas 1366x768 da UI real.
+- Testar login/backup/restauração no pacote instalado (sideload exige
+  certificado confiável; a Store reassina no envio).
+- Publicar docs/ no GitHub Pages (branch main, pasta /docs).
