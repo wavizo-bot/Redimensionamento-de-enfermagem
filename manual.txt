@@ -211,7 +211,8 @@ procedimentos (agregado e expandido). As regras de publicação estão em
 C:\APPS\Regras.txt, seção GH1-GH12.
 Em 28/10/2026 a versão 1.0.2 foi publicada no Pages (commit 389174f): landing,
 /app/, documentos legais, imagens e assets novos responderam 200; landing e app
-mostram v1.0.2.
+mostram v1.0.2. A landing também tem URL canônica, Open Graph/Twitter Card,
+imagem social 1200x630, robots.txt e sitemap.xml (commit 1129f8b).
 As páginas legais ficam somente em docs/ (fonte única, já publicada).
 
 A política cita a Google API Services User Data Policy / Limited Use, exigida
