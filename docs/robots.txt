@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://wavizo-bot.github.io/Redimensionamento-de-enfermagem/sitemap.xml
