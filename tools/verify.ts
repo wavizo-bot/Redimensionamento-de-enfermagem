@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { calcProject, calcCategory, exportSheetNames } from '../src/lib/calc';
 import { makeDemoProject, nationalHolidays } from '../src/lib/defaults';
 import { buildProjectXlsx } from '../src/lib/exportXlsx';
@@ -52,31 +52,35 @@ async function main() {
   close(Number(tec.getCell('C54').value && (tec.getCell('C54').value as { result?: number }).result), 9.579840837, 0.0001, 'C54 técnicos');
   close(Number(tec.getCell('H9').value && (tec.getCell('H9').value as { result?: number }).result), 9.579840837, 0.0001, 'H9 técnicos');
 
-  // Importação do arquivo oficial
-  const official = 'C:/Users/Maycon/Downloads/DIMENSIONAMENTO ENFERMAGEM - CLINICA DA FAMILIA ALMERINDA CHAVES - 2025-2026.xlsx';
-  const fs = await import('node:fs/promises');
-  const buf = await fs.readFile(official);
-  const fakeFile = {
-    name: 'DIMENSIONAMENTO ENFERMAGEM - CLINICA DA FAMILIA ALMERINDA CHAVES - 2025-2026.xlsx',
-    arrayBuffer: async () => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
-  } as unknown as File;
-  const preview = await readSpreadsheet(fakeFile);
-  console.log('Importação:', preview.kind, preview.unitName, preview.periodLabel, 'equipe', preview.enf?.staffCount, preview.tec?.staffCount);
-  if (preview.enf) {
-    console.log('Produção ENF:', JSON.stringify(preview.enf.production));
-    console.log('Tempos ENF:', JSON.stringify(preview.enf.directTimes));
-    console.log('Indiretos ENF total:', Object.values(preview.enf.indirect).reduce((a, b) => a + b, 0).toFixed(1));
-    console.log('Ausências ENF:', JSON.stringify(preview.enf.absences));
-    console.log('Nomes ENF:', preview.enf.names.join(' | '));
+  // Importação do arquivo oficial (procurado pelo padrão, sem gravar o nome da unidade)
+  const downloads = 'C:/Users/Maycon/Downloads';
+  const official = process.env.DIMENSIONAMENTO_OFFICIAL_XLSX
+    ?? (existsSync(downloads)
+      ? readdirSync(downloads)
+          .filter((name) => /^DIMENSIONAMENTO ENFERMAGEM.*\.xlsx$/i.test(name))
+          .map((name) => `${downloads}/${name}`)[0]
+      : undefined);
+  if (official && existsSync(official)) {
+    const preview = await readSpreadsheet(fakeSpreadsheet(official));
+    console.log('Importação:', preview.kind, preview.unitName || '(unidade omitida)', preview.periodLabel, 'equipe', preview.enf?.staffCount, preview.tec?.staffCount);
+    if (preview.enf) {
+      console.log('Produção ENF:', JSON.stringify(preview.enf.production));
+      console.log('Tempos ENF:', JSON.stringify(preview.enf.directTimes));
+      console.log('Indiretos ENF total:', Object.values(preview.enf.indirect).reduce((a, b) => a + b, 0).toFixed(1));
+      console.log('Ausências ENF:', JSON.stringify(preview.enf.absences));
+      console.log('Nomes ENF:', preview.enf.names.join(' | '));
+    }
+    if (preview.tec) {
+      console.log('Produção TEC:', JSON.stringify(preview.tec.production));
+      console.log('Tempos TEC:', JSON.stringify(preview.tec.directTimes));
+      console.log('Indiretos TEC total:', Object.values(preview.tec.indirect).reduce((a, b) => a + b, 0).toFixed(1));
+      console.log('Ausências TEC:', JSON.stringify(preview.tec.absences));
+      console.log('Nomes TEC:', preview.tec.names.join(' | '));
+    }
+    console.log('Avisos:', preview.warnings);
+  } else {
+    console.log('SKIP Importação oficial: arquivo não encontrado');
   }
-  if (preview.tec) {
-    console.log('Produção TEC:', JSON.stringify(preview.tec.production));
-    console.log('Tempos TEC:', JSON.stringify(preview.tec.directTimes));
-    console.log('Indiretos TEC total:', Object.values(preview.tec.indirect).reduce((a, b) => a + b, 0).toFixed(1));
-    console.log('Ausências TEC:', JSON.stringify(preview.tec.absences));
-    console.log('Nomes TEC:', preview.tec.names.join(' | '));
-  }
-  console.log('Avisos:', preview.warnings);
 
   const expandedReport = 'C:/Users/Maycon/Downloads/Detalhamento de procedimentos lançados expandidos.xlsx';
   if (existsSync(expandedReport)) {
