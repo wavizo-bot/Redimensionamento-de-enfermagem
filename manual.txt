@@ -242,7 +242,9 @@ mostram v1.0.2. A landing também tem URL canônica, Open Graph/Twitter Card,
 imagem social 1200x630, robots.txt e sitemap.xml (commit 1129f8b).
 Em 29/10/2026 a landing e o guia interno passaram a explicar a base parcial a
 partir dos relatórios de procedimentos (quatro formatos e janelas de produção).
-A versão 1.0.3 é publicada junto com essa atualização.
+A versão 1.0.3 foi publicada no Pages (commit 56aba6e): landing, /app/,
+documentos legais, robots, sitemap e assets responderam 200; a landing mostra
+v1.0.3 e o app mostra "versão 1.0.3".
 As páginas legais ficam somente em docs/ (fonte única, já publicada).
 
 A política cita a Google API Services User Data Policy / Limited Use, exigida
