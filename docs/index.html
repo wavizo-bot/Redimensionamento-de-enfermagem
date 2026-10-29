@@ -590,10 +590,11 @@
       <div class="card">
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.2 3.5 3.5 0 0 0 7 18Z"/></svg></div>
         <h3>Relatório de procedimentos</h3>
-        <p>O extrato “Detalhamento de procedimentos lançados” é lido e resumido por mês e por unidade.</p>
+        <p>O extrato “Detalhamento de procedimentos lançados” é lido nos dois formatos: total por mês ou detalhado por profissional e procedimento.</p>
         <ul>
-          <li>Gráfico dos totais mensais e média por mês.</li>
-          <li>Explicação do que falta para virar dimensionamento.</li>
+          <li>Totais mensais, média do período e gráfico.</li>
+          <li>Separação por enfermeiros, técnicos e outras ocupações quando o arquivo detalha.</li>
+          <li>Explicação do que ainda falta para virar dimensionamento.</li>
           <li>Nada é inventado quando o detalhe não existe no arquivo.</li>
         </ul>
       </div>
@@ -695,10 +696,11 @@
             mostra um resumo do que encontrou antes de aplicar.
           </p>
           <p>
-            Já o relatório “Detalhamento de procedimentos lançados” traz apenas o total de
-            procedimentos por mês. Ele é lido e resumido, mas não permite calcular o quadro:
-            faltam os dez tipos de procedimento, a separação entre enfermeiros e técnicos, os
-            tempos médios, as atividades indiretas e o quadro atual.
+            O relatório pode vir em dois formatos. O resumido traz apenas o total de procedimentos
+            por mês; o expandido traz uma linha por profissional e procedimento. O aplicativo lê os
+            dois e mostra totais mensais, por categoria e dos últimos 12 meses. Nenhum deles permite
+            calcular o quadro sozinho: faltam o agrupamento nos dez grupos do WISN, os tempos médios,
+            as atividades indiretas, as ausências e o quadro atual.
           </p>
         </div>
       </details>
@@ -786,7 +788,7 @@
 
 <footer>
   <div class="wrap">
-    <p>© 2026 wavizo · Dimensionamento de Enfermagem · v1.0.1</p>
+    <p>© 2026 wavizo · Dimensionamento de Enfermagem · v1.0.2</p>
     <nav aria-label="Links legais">
       <a href="politica-de-privacidade.html">Privacidade</a>
       <a href="termos-de-servico.html">Termos</a>

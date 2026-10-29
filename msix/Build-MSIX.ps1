@@ -3,7 +3,7 @@
   Build reproduzivel do MSIX — Dimensionamento de Enfermagem
   Uso:
     powershell -ExecutionPolicy Bypass -File msix\Build-MSIX.ps1
-    powershell -ExecutionPolicy Bypass -File msix\Build-MSIX.ps1 -Version 1.0.1.0
+    powershell -ExecutionPolicy Bypass -File msix\Build-MSIX.ps1 -Version 1.0.2.0
 
   Etapas: npm build -> staging/www -> assets -> host C# (csc) -> manifesto
           -> OAuth client -> makeappx -> signtool (certificado de teste).

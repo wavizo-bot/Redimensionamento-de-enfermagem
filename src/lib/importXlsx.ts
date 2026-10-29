@@ -19,6 +19,13 @@ export interface MonthlyTotal {
   total: number;
 }
 
+export interface ProcedureTotals {
+  enf: number;
+  tec: number;
+  other: number;
+  total: number;
+}
+
 export interface ImportPreview {
   fileName: string;
   kind: 'dimensionamento' | 'procedimentos' | 'desconhecido';
@@ -33,6 +40,10 @@ export interface ImportPreview {
   coverageLabel?: string;
   coverageMonths?: number;
   monthlyTotals?: MonthlyTotal[];
+  detail?: 'aggregate' | 'expanded';
+  categoryTotals?: ProcedureTotals;
+  last12Totals?: ProcedureTotals & { months: number };
+  staffNames?: { enf: number; tec: number };
   warnings: string[];
 }
 
@@ -188,32 +199,119 @@ function monthLabel(date: Date): string {
   return `${MONTH_ABBR[date.getUTCMonth()]}/${date.getUTCFullYear()}`;
 }
 
-/** Relatórios "Detalhamento de procedimentos": uma coluna por mês e o total na linha 3. */
+const normalizeKey = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+
+function classifyOccupation(value: string): 'enf' | 'tec' | 'other' {
+  const s = normalizeKey(value);
+  if (s.includes('ENFERMEIR')) return 'enf';
+  if (s.includes('ENFERMAGEM') && (s.includes('TECNIC') || s.includes('TEC.') || s.includes('AUXILIAR'))) {
+    return 'tec';
+  }
+  return 'other';
+}
+
+function coverageRange(months: MonthlyTotal[]): string {
+  if (!months.length) return '';
+  return months.length === 1 ? months[0].label : `${months[0].label} a ${months[months.length - 1].label}`;
+}
+
+/**
+ * Relatórios "Detalhamento de procedimentos" em dois formatos:
+ * - agregado: uma coluna por mês e o total geral na linha 3;
+ * - expandido: uma linha por ocupação/profissional/procedimento e uma coluna
+ *   por mês (a partir da coluna E). Nesse formato é preciso somar todas as
+ *   linhas, inclusive as de outras ocupações, para obter o total do período.
+ */
 function readExportReport(ws: ExcelJS.Worksheet) {
-  const months: MonthlyTotal[] = [];
-  for (let col = 2; col <= ws.columnCount; col += 1) {
+  const columns: { col: number; date: Date }[] = [];
+  for (let col = 1; col <= ws.columnCount; col += 1) {
     const date = asDate(cellValue(ws, 1, col));
-    if (!date) continue;
-    months.push({
+    if (date) columns.push({ col, date });
+  }
+
+  const expanded = [2, 3, 4].some((col) => {
+    const h = normalizeKey(text(ws, 2, col));
+    return h === 'OCUPACAO' || h === 'PROFISSIONAIS' || h === 'PROCEDIMENTO_PAI' || h === 'PROCEDIMENTO PAI';
+  });
+
+  if (!expanded) {
+    const months: MonthlyTotal[] = columns.map(({ col, date }) => ({
       label: monthLabel(date),
       iso: date.toISOString().slice(0, 10),
       total: num(ws, 3, col) ?? 0,
-    });
+    }));
+    return {
+      expanded: false,
+      unitName: text(ws, 3, 1),
+      months,
+      total: months.reduce((sum, m) => sum + m.total, 0),
+      coverageLabel: coverageRange(months),
+      coverageMonths: months.length,
+      startDate: months[0]?.iso ?? '',
+      endDate: months[months.length - 1]?.iso ?? '',
+      categoryTotals: undefined,
+      last12Totals: undefined,
+      staffNames: undefined,
+    };
   }
-  const total = months.reduce((sum, m) => sum + m.total, 0);
-  const coverageLabel = months.length
-    ? months.length === 1
-      ? months[0].label
-      : `${months[0].label} a ${months[months.length - 1].label}`
-    : '';
+
+  const monthly = new Array<number>(ws.columnCount + 1).fill(0);
+  const last12Cols = new Set(columns.slice(-12).map((c) => c.col));
+  const totals: ProcedureTotals = { enf: 0, tec: 0, other: 0, total: 0 };
+  const last12: ProcedureTotals & { months: number } = {
+    enf: 0,
+    tec: 0,
+    other: 0,
+    total: 0,
+    months: Math.min(12, columns.length),
+  };
+  const names = { enf: new Set<string>(), tec: new Set<string>() };
+  let unitName = '';
+
+  for (let row = 3; row <= ws.rowCount; row += 1) {
+    if (!unitName) unitName = text(ws, row, 1);
+    const kind = classifyOccupation(text(ws, row, 2));
+    const name = normalizeKey(text(ws, row, 3));
+    let rowTotal = 0;
+
+    for (const { col } of columns) {
+      const value = num(ws, row, col) ?? 0;
+      rowTotal += value;
+      monthly[col] += value;
+      if (last12Cols.has(col)) last12[kind] += value;
+    }
+
+    if (!rowTotal) continue;
+    totals[kind] += rowTotal;
+    totals.total += rowTotal;
+    if (name && kind !== 'other') names[kind].add(name);
+  }
+
+  last12.total = last12.enf + last12.tec + last12.other;
+  const months: MonthlyTotal[] = columns.map(({ col, date }) => ({
+    label: monthLabel(date),
+    iso: date.toISOString().slice(0, 10),
+    total: monthly[col],
+  }));
+
   return {
-    unitName: text(ws, 3, 1),
+    expanded: true,
+    unitName,
     months,
-    total,
-    coverageLabel,
+    total: totals.total,
+    coverageLabel: coverageRange(months),
     coverageMonths: months.length,
     startDate: months[0]?.iso ?? '',
     endDate: months[months.length - 1]?.iso ?? '',
+    categoryTotals: totals,
+    last12Totals: last12,
+    staffNames: { enf: names.enf.size, tec: names.tec.size },
   };
 }
 
@@ -261,6 +359,10 @@ export async function readSpreadsheet(file: File): Promise<ImportPreview> {
         coverageLabel: report.coverageLabel,
         coverageMonths: report.coverageMonths,
         monthlyTotals: report.months,
+        detail: report.expanded ? 'expanded' : 'aggregate',
+        categoryTotals: report.categoryTotals,
+        last12Totals: report.last12Totals,
+        staffNames: report.staffNames,
         warnings: report.months.length
           ? []
           : ['Não encontrei as datas dos meses na primeira linha do relatório.'],

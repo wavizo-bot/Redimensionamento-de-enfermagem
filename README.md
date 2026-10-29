@@ -1,4 +1,4 @@
-﻿# Dimensionamento de Enfermagem
+# Dimensionamento de Enfermagem
 
 Aplicativo Windows (MSIX) para dimensionamento de pessoal de enfermagem pelo
 método WISN/WPSN, conforme o Parecer Normativo COFEN nº 1/2024.
@@ -19,8 +19,9 @@ Site do projeto: https://wavizo-bot.github.io/Redimensionamento-de-enfermagem/
   `DIMENSIONAMENTO - 20252026 - T.`) com preenchimento automático dos campos.
 - Normalização de OOXML fora do padrão (prefixo `x:` e células sem referência),
   comum em arquivos gerados por outros sistemas.
-- Leitura do relatório "Detalhamento de procedimentos lançados" como conferência
-  mensal, com gráfico e explicação do que falta para virar dimensionamento.
+- Leitura do relatório "Detalhamento de procedimentos lançados" nos formatos
+  resumido (total por mês) e expandido (por profissional e procedimento), com
+  totais mensais, por categoria, últimos 12 meses e gráfico.
 - Exportação em Excel com as abas:
   - `DIMENSIONAMENTO -ENF - 20252026`
   - `DIMENSIONAMENTO - 20252026 - T.`
@@ -80,7 +81,7 @@ Pré-requisitos:
 - DLLs do WebView2 (copiadas do staging local no build)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File msix/Build-MSIX.ps1 -Version 1.0.1.0
+powershell -ExecutionPolicy Bypass -File msix/Build-MSIX.ps1 -Version 1.0.2.0
 ```
 
 O pacote é gerado em `msix/output/` e a versão web em `docs/app/`.
@@ -93,7 +94,7 @@ reassina o pacote na publicação.
 - Nome: `wavizo.Dimensionamentodeenfermagem`
 - Publisher: `CN=57BB464E-553F-45B6-A4ED-B253157408EB`
 - PublisherDisplayName: `wavizo`
-- Versão: `1.0.1.0`
+- Versão: `1.0.2.0`
 
 ## Privacidade e dados
 

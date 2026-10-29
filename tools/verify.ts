@@ -1,9 +1,17 @@
 import ExcelJS from 'exceljs';
-import { writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { calcProject, calcCategory, exportSheetNames } from '../src/lib/calc';
 import { makeDemoProject, nationalHolidays } from '../src/lib/defaults';
 import { buildProjectXlsx } from '../src/lib/exportXlsx';
 import { readSpreadsheet } from '../src/lib/importXlsx';
+
+function fakeSpreadsheet(path: string): File {
+  const buf = readFileSync(path);
+  return {
+    name: path.split('/').pop() ?? 'planilha.xlsx',
+    arrayBuffer: async () => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
+  } as unknown as File;
+}
 
 function close(actual: number, expected: number, tolerance: number, label: string) {
   const ok = Math.abs(actual - expected) <= tolerance;
@@ -69,6 +77,32 @@ async function main() {
     console.log('Nomes TEC:', preview.tec.names.join(' | '));
   }
   console.log('Avisos:', preview.warnings);
+
+  const expandedReport = 'C:/Users/Maycon/Downloads/Detalhamento de procedimentos lançados expandidos.xlsx';
+  if (existsSync(expandedReport)) {
+    const p = await readSpreadsheet(fakeSpreadsheet(expandedReport));
+    close(p.coverageMonths ?? 0, 48, 0, 'Expandido: meses');
+    close(p.totalProcedures ?? 0, 248007, 0, 'Expandido: total');
+    close(p.categoryTotals?.enf ?? 0, 49531, 0, 'Expandido: enfermeiros');
+    close(p.categoryTotals?.tec ?? 0, 52778, 0, 'Expandido: técnicos');
+    close(p.categoryTotals?.other ?? 0, 145698, 0, 'Expandido: outras ocupações');
+    close(p.last12Totals?.total ?? 0, 74662, 0, 'Expandido: últimos 12 meses');
+    close(p.staffNames?.enf ?? 0, 20, 0, 'Expandido: nomes enfermeiros');
+    close(p.staffNames?.tec ?? 0, 23, 0, 'Expandido: nomes técnicos');
+    console.log('Detalhamento expandido:', p.detail, p.coverageLabel, p.totalProcedures);
+  } else {
+    console.log('SKIP Detalhamento expandido: arquivo não encontrado');
+  }
+
+  const aggregateReport = 'C:/Users/Maycon/Downloads/Detalhamento de procedimentos lançados.xlsx';
+  if (existsSync(aggregateReport)) {
+    const p = await readSpreadsheet(fakeSpreadsheet(aggregateReport));
+    close(p.coverageMonths ?? 0, 22, 0, 'Agregado: meses');
+    close(p.totalProcedures ?? 0, 130410, 0, 'Agregado: total');
+    console.log('Detalhamento agregado:', p.detail, p.coverageLabel, p.totalProcedures);
+  } else {
+    console.log('SKIP Detalhamento agregado: arquivo não encontrado');
+  }
 }
 
 main().catch((e) => {

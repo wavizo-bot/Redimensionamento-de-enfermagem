@@ -273,6 +273,40 @@ export function ImportModal({
                   </div>
                 </div>
 
+                {preview.detail === 'expanded' && preview.categoryTotals ? (
+                  <div className="import-grid import-grid-4">
+                    <div>
+                      <span>Enfermeiros</span>
+                      <strong>{preview.categoryTotals.enf.toLocaleString('pt-BR')}</strong>
+                      <em>
+                        últimos 12 meses:{' '}
+                        {(preview.last12Totals?.enf ?? 0).toLocaleString('pt-BR')}
+                      </em>
+                    </div>
+                    <div>
+                      <span>Técnicos/auxiliares</span>
+                      <strong>{preview.categoryTotals.tec.toLocaleString('pt-BR')}</strong>
+                      <em>
+                        últimos 12 meses:{' '}
+                        {(preview.last12Totals?.tec ?? 0).toLocaleString('pt-BR')}
+                      </em>
+                    </div>
+                    <div>
+                      <span>Outras ocupações</span>
+                      <strong>{preview.categoryTotals.other.toLocaleString('pt-BR')}</strong>
+                      <em>
+                        últimos 12 meses:{' '}
+                        {(preview.last12Totals?.other ?? 0).toLocaleString('pt-BR')}
+                      </em>
+                    </div>
+                    <div>
+                      <span>Profissionais com lançamento</span>
+                      <strong>{preview.staffNames?.enf ?? 0} enfermeiros</strong>
+                      <em>{preview.staffNames?.tec ?? 0} técnicos/auxiliares</em>
+                    </div>
+                  </div>
+                ) : null}
+
                 {preview.monthlyTotals && preview.monthlyTotals.length > 1 ? (
                   <div className="report-chart">
                     <div className="report-bars" role="img" aria-label="Procedimentos por mês">
@@ -297,22 +331,44 @@ export function ImportModal({
                 <div className="callout callout-warn">
                   <Icon name="alert" />
                   <div>
-                    <strong>O arquivo foi lido, mas ele não tem o detalhe que o cálculo exige</strong>
-                    <p>
-                      Este relatório traz <strong>uma coluna por mês</strong> e apenas o campo
-                      “TOTAL PROCEDIMENTOS”. Para calcular o quadro pelo WISN/WPSN o aplicativo precisa da
-                      produção separada por tipo de procedimento e por categoria:
-                    </p>
-                    <ul className="report-missing">
-                      <li>os 10 procedimentos do dimensionamento, cada um com sua quantidade anual;</li>
-                      <li>a divisão entre enfermeiros e técnicos/auxiliares;</li>
-                      <li>tempos médios, cuidados indiretos, ausências e quadro atual.</li>
-                    </ul>
-                    <p>
-                      Use este extrato para conferir o volume. Para criar o dimensionamento, importe a
-                      planilha que contém as abas <strong>ENFERMEIROS</strong>,{' '}
-                      <strong>AUXILIARESTECNICOS</strong> e <strong>DIMENSIONAMENTO</strong>.
-                    </p>
+                    {preview.detail === 'expanded' ? (
+                      <>
+                        <strong>O detalhamento foi lido, mas ainda falta o agrupamento do cálculo</strong>
+                        <p>
+                          Este arquivo traz a produção <strong>por profissional e por procedimento</strong>,
+                          mês a mês. Para calcular o quadro pelo WISN/WPSN o aplicativo ainda precisa de:
+                        </p>
+                        <ul className="report-missing">
+                          <li>agrupamento dos procedimentos nos 10 grupos do dimensionamento;</li>
+                          <li>tempos médios de cada grupo;</li>
+                          <li>cuidados indiretos, ausências e quadro atual por categoria.</li>
+                        </ul>
+                        <p>
+                          Use este extrato para conferir volume e distribuição. Para criar o dimensionamento,
+                          importe a planilha que contém as abas <strong>ENFERMEIROS</strong>,{' '}
+                          <strong>AUXILIARESTECNICOS</strong> e <strong>DIMENSIONAMENTO</strong>.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <strong>O arquivo foi lido, mas ele não tem o detalhe que o cálculo exige</strong>
+                        <p>
+                          Este relatório traz <strong>uma coluna por mês</strong> e apenas o total geral em
+                          “TOTAL PROCEDIMENTOS”. Para calcular o quadro pelo WISN/WPSN o aplicativo precisa da
+                          produção separada por tipo de procedimento e por categoria:
+                        </p>
+                        <ul className="report-missing">
+                          <li>os 10 procedimentos do dimensionamento, cada um com sua quantidade anual;</li>
+                          <li>a divisão entre enfermeiros e técnicos/auxiliares;</li>
+                          <li>tempos médios, cuidados indiretos, ausências e quadro atual.</li>
+                        </ul>
+                        <p>
+                          Use este extrato para conferir o volume. Para criar o dimensionamento, importe a
+                          planilha que contém as abas <strong>ENFERMEIROS</strong>,{' '}
+                          <strong>AUXILIARESTECNICOS</strong> e <strong>DIMENSIONAMENTO</strong>.
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
 

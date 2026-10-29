@@ -2238,6 +2238,13 @@ body.modal-open {
   overflow-wrap: anywhere;
 }
 
+.import-grid em {
+  margin-top: 2px;
+  font-style: normal;
+  font-size: 10.5px;
+  color: var(--ink-400);
+}
+
 .import-result {
   display: flex;
   align-items: center;
