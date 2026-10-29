@@ -209,6 +209,9 @@ As capturas WebP foram geradas de store/screenshots com ffmpeg (1366x768).
 Em 28/10/2026 a landing passou a explicar os dois formatos do relatório de
 procedimentos (agregado e expandido). As regras de publicação estão em
 C:\APPS\Regras.txt, seção GH1-GH12.
+Em 28/10/2026 a versão 1.0.2 foi publicada no Pages (commit 389174f): landing,
+/app/, documentos legais, imagens e assets novos responderam 200; landing e app
+mostram v1.0.2.
 As páginas legais ficam somente em docs/ (fonte única, já publicada).
 
 A política cita a Google API Services User Data Policy / Limited Use, exigida
