@@ -17,12 +17,17 @@ Site do projeto: https://wavizo-bot.github.io/Redimensionamento-de-enfermagem/
 - Equipe flexível: adicionar, remover e renomear profissionais.
 - Importação da planilha oficial (`DIMENSIONAMENTO -ENF - 20252026` e
   `DIMENSIONAMENTO - 20252026 - T.`) com preenchimento automático dos campos.
+- Normalização de OOXML fora do padrão (prefixo `x:` e células sem referência),
+  comum em arquivos gerados por outros sistemas.
+- Leitura do relatório "Detalhamento de procedimentos lançados" como conferência
+  mensal, com gráfico e explicação do que falta para virar dimensionamento.
 - Exportação em Excel com as abas:
   - `DIMENSIONAMENTO -ENF - 20252026`
   - `DIMENSIONAMENTO - 20252026 - T.`
   - `AVALIAÇÃO DIM. - <tag>`
   - `MEMÓRIA DE CÁLCULO`
-- Backup e restauração pelo Google Drive (`drive.appdata`), com OAuth + PKCE.
+- Backup e restauração pelo Google Drive (`drive.appdata`), com OAuth + PKCE e
+  janela de login dentro do próprio aplicativo.
 - Páginas públicas de apresentação, privacidade, termos e aviso legal em `docs/`.
 
 ## Estrutura
@@ -75,7 +80,7 @@ Pré-requisitos:
 - DLLs do WebView2 (copiadas do staging local no build)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File msix/Build-MSIX.ps1
+powershell -ExecutionPolicy Bypass -File msix/Build-MSIX.ps1 -Version 1.0.1.0
 ```
 
 O pacote é gerado em `msix/output/` e a versão web em `docs/app/`.
@@ -88,7 +93,7 @@ reassina o pacote na publicação.
 - Nome: `wavizo.Dimensionamentodeenfermagem`
 - Publisher: `CN=57BB464E-553F-45B6-A4ED-B253157408EB`
 - PublisherDisplayName: `wavizo`
-- Versão: `1.0.0.0`
+- Versão: `1.0.1.0`
 
 ## Privacidade e dados
 

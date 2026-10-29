@@ -244,18 +244,102 @@ export function ImportModal({
                   </label>
                 ) : null}
               </>
+            ) : preview.kind === 'procedimentos' ? (
+              <>
+                <div className="import-grid import-grid-4">
+                  <div>
+                    <span>Unidade no relatório</span>
+                    <strong>{preview.unitName || 'Não informada'}</strong>
+                  </div>
+                  <div>
+                    <span>Período coberto</span>
+                    <strong>{preview.coverageLabel || preview.periodLabel}</strong>
+                  </div>
+                  <div>
+                    <span>Total no período</span>
+                    <strong>
+                      {preview.totalProcedures !== null
+                        ? preview.totalProcedures.toLocaleString('pt-BR')
+                        : '—'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Média por mês</span>
+                    <strong>
+                      {preview.totalProcedures !== null && preview.coverageMonths
+                        ? Math.round(preview.totalProcedures / preview.coverageMonths).toLocaleString('pt-BR')
+                        : '—'}
+                    </strong>
+                  </div>
+                </div>
+
+                {preview.monthlyTotals && preview.monthlyTotals.length > 1 ? (
+                  <div className="report-chart">
+                    <div className="report-bars" role="img" aria-label="Procedimentos por mês">
+                      {preview.monthlyTotals.map((m) => {
+                        const max = Math.max(...preview.monthlyTotals!.map((x) => x.total), 1);
+                        return (
+                          <i
+                            key={m.iso}
+                            style={{ height: `${Math.max(6, Math.round((m.total / max) * 100))}%` }}
+                            title={`${m.label}: ${m.total.toLocaleString('pt-BR')}`}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="report-axis">
+                      <span>{preview.monthlyTotals[0].label}</span>
+                      <span>{preview.monthlyTotals[preview.monthlyTotals.length - 1].label}</span>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="callout callout-warn">
+                  <Icon name="alert" />
+                  <div>
+                    <strong>O arquivo foi lido, mas ele não tem o detalhe que o cálculo exige</strong>
+                    <p>
+                      Este relatório traz <strong>uma coluna por mês</strong> e apenas o campo
+                      “TOTAL PROCEDIMENTOS”. Para calcular o quadro pelo WISN/WPSN o aplicativo precisa da
+                      produção separada por tipo de procedimento e por categoria:
+                    </p>
+                    <ul className="report-missing">
+                      <li>os 10 procedimentos do dimensionamento, cada um com sua quantidade anual;</li>
+                      <li>a divisão entre enfermeiros e técnicos/auxiliares;</li>
+                      <li>tempos médios, cuidados indiretos, ausências e quadro atual.</li>
+                    </ul>
+                    <p>
+                      Use este extrato para conferir o volume. Para criar o dimensionamento, importe a
+                      planilha que contém as abas <strong>ENFERMEIROS</strong>,{' '}
+                      <strong>AUXILIARESTECNICOS</strong> e <strong>DIMENSIONAMENTO</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <details className="report-help">
+                  <summary>O que exatamente o aplicativo procura na planilha de dimensionamento</summary>
+                  <div>
+                    <p>
+                      Aba <strong>DIMENSIONAMENTO -ENF</strong> (e a equivalente dos técnicos): produção em{' '}
+                      <strong>C21:C30</strong>, tempos médios em <strong>D21:D30</strong>, cuidados indiretos em{' '}
+                      <strong>C35:C48</strong>, quadro atual em <strong>G9</strong> e ausências em{' '}
+                      <strong>AJ4, AJ6, AJ8 e AJ10</strong>.
+                    </p>
+                    <p>
+                      Se a sua planilha tiver outro layout, o aplicativo também tenta ler a aba de produção
+                      (totais em <strong>M2:M11</strong>) e as abas de nomes da equipe.
+                    </p>
+                  </div>
+                </details>
+              </>
             ) : (
               <div className="callout callout-warn">
                 <Icon name="alert" />
                 <div>
-                  <strong>Esta planilha não separa os procedimentos</strong>
+                  <strong>Formato não reconhecido</strong>
                   <p>
-                    O arquivo “Detalhamento de procedimentos lançados” traz apenas totais por mês, sem
-                    distinguir os 10 tipos de procedimento nem enfermeiros e técnicos. Use-o só para
-                    conferir o volume
-                    {preview.totalProcedures ? ` (${preview.totalProcedures.toLocaleString('pt-BR')} registros no total)` : ''}.
-                    Para importar o dimensionamento completo, escolha a planilha oficial que contém as abas
-                    de enfermeiros e técnicos.
+                    Não encontrei as abas de dimensionamento nem um relatório de procedimentos com totais
+                    mensais. Confira se o arquivo é o .xlsx correto e se não está protegido por senha.
                   </p>
                 </div>
               </div>

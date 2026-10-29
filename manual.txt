@@ -1,5 +1,5 @@
 ﻿DIMENSIONAMENTO DE ENFERMAGEM — MANUAL DO PROJETO
-Atualizado em 27/10/2026 · versão do app 1.0.0 (MSIX 1.0.0.0)
+Atualizado em 28/10/2026 · versão do app 1.0.1 (MSIX 1.0.1.0)
 ===============================================================================
 
 1. O QUE É
@@ -29,8 +29,11 @@ GitHub Pages (docs/):           https://wavizo-bot.github.io/Redimensionamento-d
 Contato público:                mmr05@hotmail.com / (11) 97883-1938
 
 Versões:
-- 1.0.0 / 1.0.0.0 — primeiro envio preparado (não enviado ainda). A próxima
-  versão enviada deve ser maior (1.0.1.0 ou 1.1.0.0).
+- 1.0.0 / 1.0.0.0 — publicada na Microsoft Store (a assinatura é da Store; o
+  pacote local não pode ser substituído por sideload).
+- 1.0.1 / 1.0.1.0 — gerada em 28/10/2026, pronta para envio ao Partner Center.
+  Corrige a ponte do Drive no WebView2, a importação de OOXML fora do padrão e
+  melhora a apresentação pública. A próxima versão enviada deve ser maior.
 
 3. ESTRUTURA DE PASTAS
 ======================
@@ -42,6 +45,7 @@ src/
     defaults.ts              Procedimentos, tempos, indiretos, projeto exemplo
     storage.ts               localStorage + normalização do workspace
     importXlsx.ts            Leitura da planilha oficial (ExcelJS)
+    xlsxNormalize.ts         Normaliza OOXML fora do padrão antes do ExcelJS
     exportXlsx.ts            Geração do Excel de 4 abas com fórmulas e cache
     drive.ts                 Ponte JS <-> host (OAuth/Drive/exportar)
     site.ts                  Nome, contato e URLs públicas
@@ -80,6 +84,16 @@ indiretos C35:C48, quadro G9, unidade A5); ausências em AJ4/AJ6/AJ8/AJ10.
 Quando há contagem oficial, importa no modo "Só a quantidade" e limita nomes à
 quantidade oficial.
 
+Antes do ExcelJS, xlsxNormalize.ts remove o prefixo de namespace "x:" e cria as
+referências `r` de linha/célula quando o arquivo não as traz. Sem isso, o
+ExcelJS falha com "Cannot read properties of undefined (reading 'sheets')" ou
+"Invalid row number in model". A planilha em si não é alterada no disco.
+
+Relatórios "Detalhamento de procedimentos lançados": quando não existem as abas
+de enfermeiros/técnicos, o app procura "MES/ANO" e "TOTAL PROCEDIMENTOS",
+resume os totais por mês e explica que o arquivo não tem granularidade para o
+cálculo. Nada é distribuído por procedimento por suposição.
+
 Exportação (4 abas):
   DIMENSIONAMENTO -ENF - <tag>   (nome exato exigido, máx. 31 caracteres)
   DIMENSIONAMENTO - <tag> - T.   (nome exato exigido)
@@ -108,9 +122,15 @@ O núcleo mantém precisão total; o arredondamento é só de exibição.
 - Token em DPAPI no perfil do usuário: %LOCALAPPDATA%\wavizo\
   DimensionamentoDeEnfermagem\google-token.dat
 - Backup único: dimensionamento-backup.json na pasta privada do app (appDataFolder).
-- O host C# é o único que fala com o Google; o JS chama a ponte
-  window.dimensionamentoDrive (GetState, Login, Logout, CheckRemote, Upload,
-  Download, GetAppVersion, SaveFile, Quit).
+- O host C# é o único que fala com o Google; o JS chama a ponte em
+  window.chrome.webview.hostObjects.dimensionamentoDrive (o WebView2 não expõe
+  window.dimensionamentoDrive). Métodos: GetState, Login, LoginExternal,
+  Logout, CheckRemote, Upload, Download, GetAppVersion, SaveFile, Quit.
+- Login principal: janela filha com WebView2 próprio (padrão do Caderno de
+  Cuidado), que intercepta o redirect de loopback e fecha sozinha. Se o Google
+  recusar o navegador embutido, o modal oferece "Conectar pelo navegador
+  padrão" (LoginExternal, listener loopback em IPv4/IPv6).
+- O parâmetro `state` do OAuth é conferido antes de trocar o código por token.
 - Conflito de horários é sempre decisão do usuário; o app nunca sobe base vazia
   nem apaga a nuvem sozinho; backups < 1 KB são ignorados.
 
@@ -162,11 +182,16 @@ Verificação de cálculo/importação/exportação:
   casa com o regex. Usar lookbehind de espaço.
 - WebView2: window.print abre a impressão do Windows; download de Blob funciona,
   e no app instalado o Excel é salvo pelo diálogo nativo (SaveFile).
+- Host objects do WebView2 ficam em chrome.webview.hostObjects.<nome>; testar
+  window.<nome> dava falso negativo e deixava o modal da nuvem sem botão.
+- Ao trocar o Launcher.cs, encerrar o processo em msix\staging antes do build:
+  o Windows mantém o .exe travado e o Remove-Item do staging falha.
 - Nunca empacotar perfil WebView2 nem google-client.json no git.
 
 9. PÁGINAS PÚBLICAS
 ===================
 docs/index.html                  Apresentação (GitHub Pages)
+docs/assets/*.webp               Capturas reais do app usadas na apresentação
 docs/politica-de-privacidade.html
 docs/termos-de-servico.html
 docs/aviso-legal.html
@@ -175,6 +200,9 @@ docs/app/                        Build web de demonstração (gerado no build)
 Publicado em 27/10/2026 via GitHub Pages (branch main, pasta /docs):
   https://wavizo-bot.github.io/Redimensionamento-de-enfermagem/
   https://wavizo-bot.github.io/Redimensionamento-de-enfermagem/app/
+Em 28/10/2026 a apresentação foi refeita com capturas de tela, explicação do
+cálculo, seção "o que o app não é", FAQ, documentos e resumo em inglês.
+As capturas WebP foram geradas de store/screenshots com ffmpeg (1366x768).
 As páginas legais ficam somente em docs/ (fonte única, já publicada).
 
 A política cita a Google API Services User Data Policy / Limited Use, exigida
@@ -183,9 +211,15 @@ oficial, prontuário ou dispositivo médico.
 
 10. PENDÊNCIAS
 ==============
-- Enviar o MSIX ao Partner Center (Store ID 9MV9H9HPQ0HB) e preencher listagem.
-  Pacote pronto em entregas/partner-center/ (MSIX, artes, capturas e textos).
-- Testar login/backup/restauração no pacote instalado (sideload exige
-  certificado confiável; a Store reassina no envio).
-- Após a publicação, o link da Store em docs/index.html passa a responder.
-- Próxima versão enviada deve ser maior que 1.0.0.0.
+- Enviar o MSIX 1.0.1.0 ao Partner Center (Store ID 9MV9H9HPQ0HB) e atualizar a
+  listagem. Pacote pronto em entregas/partner-center/ (MSIX, artes, capturas e
+  textos). A Store reassina no envio; não é possível instalar por sideload
+  sobre o pacote assinado pela Store.
+- Depois da publicação, instalar a atualização pela Store e testar o login
+  Google no app instalado (a conta usada no teste foi wyj.juridico@gmail.com).
+- O token do Drive fica em %LOCALAPPDATA% e deve ser compartilhado entre as
+  versões staging e Store (mesmo caminho), então o app publicado já deve abrir
+  conectado se a conta foi autorizada antes.
+- Revisar as capturas de tela da Store quando houver uma versão visualmente
+  diferente (as atuais mostram "versão 1.0.0" no rodapé do app).
+- A landing não cita unidade real; não incluir nome de unidade nos textos.

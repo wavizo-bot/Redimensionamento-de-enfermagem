@@ -4,12 +4,14 @@ import {
   checkRemote,
   cloudAvailable,
   cloudLogin,
+  cloudLoginExternal,
   cloudLogout,
   downloadWorkspace,
   getCloudState,
   hasMeaningfulData,
   hashWorkspace,
   uploadWorkspace,
+  type HostResult,
   type RemoteInfo,
 } from '../lib/drive';
 import { Icon } from '../components/Icons';
@@ -80,21 +82,35 @@ export function SyncModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [available]);
 
+  const applyLogin = async (res: HostResult) => {
+    if (!res.ok) {
+      setError(res.error || 'Não foi possível conectar ao Google Drive.');
+      return;
+    }
+    const state = await getCloudState();
+    setSignedIn(state.signedIn);
+    setEmail(state.email || res.email || '');
+    await refreshRemote(true);
+    setNote('Conta conectada. Escolha abaixo o que fazer com o backup.');
+  };
+
   const login = async () => {
     setBusy('login');
     setError('');
     setNote('');
     try {
-      const res = await cloudLogin();
-      if (!res.ok) {
-        setError(res.error || 'Não foi possível conectar ao Google Drive.');
-        return;
-      }
-      const state = await getCloudState();
-      setSignedIn(state.signedIn);
-      setEmail(state.email || res.email || '');
-      await refreshRemote(true);
-      setNote('Conta conectada. Escolha abaixo o que fazer com o backup.');
+      await applyLogin(await cloudLogin());
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const loginExternal = async () => {
+    setBusy('external');
+    setError('');
+    setNote('');
+    try {
+      await applyLogin(await cloudLoginExternal());
     } finally {
       setBusy('');
     }
@@ -258,6 +274,18 @@ export function SyncModal({
               )}
             </div>
 
+            {!signedIn ? (
+              <div className="cloud-alt">
+                <button className="btn btn-small btn-ghost" onClick={loginExternal} disabled={Boolean(busy)}>
+                  <Icon name="cloud" size={16} />{' '}
+                  {busy === 'external' ? 'Abrindo o navegador…' : 'Conectar pelo navegador padrão'}
+                </button>
+                <span className="muted small">
+                  Use esta opção se a janela do Google não carregar dentro do aplicativo.
+                </span>
+              </div>
+            ) : null}
+
             {signedIn ? (
               <>
                 <div className="cloud-status">
@@ -328,8 +356,10 @@ export function SyncModal({
             <strong>Como funciona</strong>
             <p>
               O backup é gravado em uma pasta privada do seu Google Drive (appDataFolder), invisível no
-              Drive comum e acessível somente por este aplicativo. Nada é enviado sem você conectar a
-              conta. A versão da nuvem nunca é apagada por acidente: você escolhe quando baixar ou enviar.
+              Drive comum e acessível somente por este aplicativo. Ao conectar, o navegador padrão do
+              Windows abre para você escolher a conta; nenhuma senha é digitada dentro do aplicativo.
+              Nada é enviado sem você conectar a conta. A versão da nuvem nunca é apagada por acidente:
+              você escolhe quando baixar ou enviar.
             </p>
           </div>
         </div>

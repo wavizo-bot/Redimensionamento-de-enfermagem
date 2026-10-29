@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
@@ -20,11 +23,56 @@ namespace DimensionamentoDeEnfermagem
     static class Program
     {
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
+            if (args != null && Array.IndexOf(args, "--cloud-smoke") >= 0)
+            {
+                CloudSmoke();
+                return;
+            }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MainForm());
+        }
+
+        // Diagnostico do OAuth/Drive sem abrir a interface do app.
+        // O resultado fica em %TEMP%\dimensionamento-cloud-smoke.txt.
+        private static void CloudSmoke()
+        {
+            string log = Path.Combine(Path.GetTempPath(), "dimensionamento-cloud-smoke.txt");
+            try
+            {
+                File.WriteAllText(log, "Iniciando teste do Google Drive...\r\n");
+                MessageBox.Show(
+                    "O navegador sera aberto para autorizar o Google Drive.\r\n" +
+                    "Conclua a autorizacao, volte para esta janela e aguarde o resultado.",
+                    "Teste do Google Drive", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                DriveSync drive = new DriveSync();
+                string login = Task.Run(() => drive.LoginExternal()).GetAwaiter().GetResult();
+                File.AppendAllText(log, "LOGIN: " + login + "\r\n");
+
+                if (login.IndexOf("\"ok\":true", StringComparison.Ordinal) >= 0)
+                {
+                    string check = Task.Run(() => drive.CheckRemote()).GetAwaiter().GetResult();
+                    File.AppendAllText(log, "CHECK: " + check + "\r\n");
+                    string state = Task.Run(() => drive.GetState()).GetAwaiter().GetResult();
+                    File.AppendAllText(log, "STATE: " + state + "\r\n");
+                    MessageBox.Show("Teste concluido. Resultado em:\r\n" + log,
+                        "Teste do Google Drive", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("O login nao foi concluido. Detalhes em:\r\n" + log,
+                        "Teste do Google Drive", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                try { File.AppendAllText(log, "ERRO: " + ex + "\r\n"); } catch { }
+                MessageBox.Show("Falha no teste:\r\n" + ex.Message + "\r\n\r\nDetalhes em:\r\n" + log,
+                    "Teste do Google Drive", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 
@@ -49,10 +97,10 @@ namespace DimensionamentoDeEnfermagem
             Load += InitAsync;
         }
 
-        // Login Google em janela filha com WebView2 proprio:
-        // abre a URL de autorizacao, intercepta o redirect de loopback
-        // (http://localhost:PORTA/?code=...), devolve a URL de retorno e fecha
-        // a janela sozinha. Sem navegador externo, sem HttpListener.
+        // Login Google em janela filha com WebView2 proprio (padrao do Caderno
+        // de Cuidado): abre a URL de autorizacao, intercepta o redirect de
+        // loopback (http://localhost:PORTA/?code=...), devolve a URL e fecha a
+        // janela sozinha. Sem navegador externo, sem abas perdidas.
         // Retorna null se cancelado/expirado.
         private Task<string> ShowGoogleLoginPopup(string authUrl)
         {
@@ -67,7 +115,7 @@ namespace DimensionamentoDeEnfermagem
                 Action<string> finish = null;
                 finish = (result) =>
                 {
-                    if (done) return; // sem reentrancia: Close() dentro de FormClosed nao refaz nada
+                    if (done) return;
                     done = true;
                     try { if (timeout != null) timeout.Dispose(); } catch { }
                     tcs.TrySetResult(result);
@@ -209,15 +257,36 @@ namespace DimensionamentoDeEnfermagem
         private const string BackupName = "dimensionamento-backup.json";
         private const string AppMarker = "dimensionamento-enfermagem";
 
+        private const string AuthOkHtml =
+            "<!doctype html><html lang=\"pt-BR\"><meta charset=\"utf-8\">" +
+            "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
+            "<title>Conta conectada</title><body style=\"margin:0;font-family:'Segoe UI',system-ui,sans-serif;" +
+            "background:#f6faf8;color:#10231f;display:grid;place-items:center;min-height:100vh\">" +
+            "<div style=\"max-width:440px;padding:40px 32px;text-align:center;background:#fff;border:1px solid #dce7e2;" +
+            "border-radius:20px;box-shadow:0 18px 50px -30px rgba(11,61,51,.45)\">" +
+            "<div style=\"width:56px;height:56px;margin:0 auto 18px;border-radius:16px;background:#e8f5f0;color:#0f6b5c;" +
+            "display:grid;place-items:center;font-size:28px\">&#10003;</div>" +
+            "<h1 style=\"font-size:22px;margin:0 0 8px\">Conta conectada</h1>" +
+            "<p style=\"margin:0;color:#42564f;line-height:1.5\">A autoriza&ccedil;&atilde;o foi conclu&iacute;da. " +
+            "Pode fechar esta aba e voltar ao aplicativo.</p></div></body></html>";
+
+        private const string AuthNotFoundHtml =
+            "<!doctype html><html lang=\"pt-BR\"><meta charset=\"utf-8\"><title>Autoriza&ccedil;&atilde;o</title>" +
+            "<body style=\"font-family:sans-serif;text-align:center;padding-top:4rem;color:#444\">" +
+            "<p>Aguardando a autoriza&ccedil;&atilde;o do Google.</p></body></html>";
+
         private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
         private static readonly HttpClient Http = new HttpClient();
 
-        // Abre a URL de autorizacao numa janela propria e devolve a URL de
-        // retorno (ou null). Injetado pelo MainForm (padrao popup interno).
+        // O popup interno (WebView2) e o caminho principal, igual ao Caderno de
+        // Cuidado. Se o Google recusar o navegador embutido, o JS pode chamar
+        // LoginExternal para abrir o navegador padrao + loopback.
         private readonly Func<string, Task<string>> _popup;
         private readonly MainForm _owner;
 
         public DriveSync() : this(null, null) { }
+
+        public DriveSync(MainForm owner) : this(null, owner) { }
 
         public DriveSync(Func<string, Task<string>> popupOpener, MainForm owner)
         {
@@ -225,11 +294,12 @@ namespace DimensionamentoDeEnfermagem
             _owner = owner;
         }
 
-        // Extrai ?code= / ?error= da URL de retorno do Google. Publico para teste.
-        public static bool TryParseAuthRedirect(string url, out string code, out string error)
+        // Extrai ?code= / ?error= / ?state= da URL de retorno do Google.
+        public static bool TryParseAuthRedirect(string url, out string code, out string error, out string state)
         {
             code = null;
             error = null;
+            state = null;
             try
             {
                 if (string.IsNullOrEmpty(url)) return false;
@@ -247,10 +317,18 @@ namespace DimensionamentoDeEnfermagem
                     string v = eq < 0 ? "" : WebUtility.UrlDecode(part.Substring(eq + 1));
                     if (string.Equals(k, "code", StringComparison.OrdinalIgnoreCase)) code = v;
                     else if (string.Equals(k, "error", StringComparison.OrdinalIgnoreCase)) error = v;
+                    else if (string.Equals(k, "state", StringComparison.OrdinalIgnoreCase)) state = v;
                 }
                 return true;
             }
             catch { return false; }
+        }
+
+        // Compatibilidade com o interceptador do popup WebView2.
+        public static bool TryParseAuthRedirect(string url, out string code, out string error)
+        {
+            string state;
+            return TryParseAuthRedirect(url, out code, out error, out state);
         }
 
         private static string BaseDir()
@@ -484,7 +562,127 @@ namespace DimensionamentoDeEnfermagem
             return name.Trim();
         }
 
-        public async Task<string> Login()
+        // Abre o navegador padrao e espera o redirect de loopback. O listener
+        // aceita IPv4 e IPv6, responde uma pagina amigavel e devolve a URL.
+        private static async Task<string> WaitForOAuthRedirect(string redirectUrl, string authUrl)
+        {
+            Uri uri = new Uri(redirectUrl);
+            int port = uri.Port;
+            TcpListener v4 = new TcpListener(IPAddress.Loopback, port);
+            TcpListener v6 = null;
+            try
+            {
+                v4.Start();
+                try
+                {
+                    v6 = new TcpListener(IPAddress.IPv6Loopback, port);
+                    v6.Start();
+                }
+                catch { v6 = null; }
+
+                try
+                {
+                    Process.Start(new ProcessStartInfo { FileName = authUrl, UseShellExecute = true });
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException(
+                        "Nao foi possivel abrir o navegador padrao: " + ex.Message);
+                }
+
+                Task<TcpClient> accept4 = v4.AcceptTcpClientAsync();
+                Task<TcpClient> accept6 = v6 != null ? v6.AcceptTcpClientAsync() : null;
+                Task timeout = Task.Delay(TimeSpan.FromMinutes(5));
+
+                while (true)
+                {
+                    Task<TcpClient> which;
+                    if (accept6 == null)
+                    {
+                        which = accept4;
+                    }
+                    else
+                    {
+                        Task first = await Task.WhenAny(accept4, accept6, timeout);
+                        if (first == timeout) return null;
+                        which = first == (Task)accept4 ? accept4 : accept6;
+                    }
+
+                    Task done = await Task.WhenAny(which, timeout);
+                    if (done == timeout) return null;
+
+                    TcpClient client = await which;
+                    if (which == accept4) accept4 = v4.AcceptTcpClientAsync();
+                    else accept6 = v6.AcceptTcpClientAsync();
+
+                    string requestPath = null;
+                    try
+                    {
+                        using (client)
+                        {
+                            client.ReceiveTimeout = 5000;
+                            using (NetworkStream ns = client.GetStream())
+                            {
+                                StreamReader reader = new StreamReader(ns, Encoding.ASCII, false, 2048, true);
+                                string requestLine = await reader.ReadLineAsync();
+                                string header;
+                                int guard = 0;
+                                while (!string.IsNullOrEmpty(header = await reader.ReadLineAsync()) && guard++ < 100)
+                                {
+                                }
+                                if (!string.IsNullOrEmpty(requestLine))
+                                {
+                                    string[] parts = requestLine.Split(' ');
+                                    if (parts.Length >= 2) requestPath = parts[1];
+                                }
+
+                                bool ok = requestPath != null
+                                    && (requestPath.Contains("code=") || requestPath.Contains("error="));
+                                byte[] body = Encoding.UTF8.GetBytes(ok ? AuthOkHtml : AuthNotFoundHtml);
+                                string head = "HTTP/1.1 " + (ok ? "200 OK" : "404 Not Found") + "\r\n" +
+                                    "Content-Type: text/html; charset=utf-8\r\n" +
+                                    "Content-Length: " + body.Length + "\r\n" +
+                                    "Cache-Control: no-store\r\nConnection: close\r\n\r\n";
+                                byte[] headerBytes = Encoding.ASCII.GetBytes(head);
+                                await ns.WriteAsync(headerBytes, 0, headerBytes.Length);
+                                await ns.WriteAsync(body, 0, body.Length);
+                                await ns.FlushAsync();
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Conexao interrompida (favicon, preflight): segue esperando.
+                    }
+
+                    if (requestPath != null
+                        && (requestPath.Contains("code=") || requestPath.Contains("error=")))
+                    {
+                        string full = "http://localhost:" + port + requestPath;
+                        string code, error, state;
+                        if (TryParseAuthRedirect(full, out code, out error, out state)) return full;
+                    }
+                }
+            }
+            finally
+            {
+                try { v4.Stop(); } catch { }
+                try { if (v6 != null) v6.Stop(); } catch { }
+            }
+        }
+
+        public Task<string> Login()
+        {
+            return LoginCore(true);
+        }
+
+        // Alternativa quando o Google recusa o navegador embutido.
+        public Task<string> LoginExternal()
+        {
+            return LoginCore(false);
+        }
+
+        private async Task<string> LoginCore(bool usePopup)
         {
             try
             {
@@ -493,8 +691,14 @@ namespace DimensionamentoDeEnfermagem
                     return Fail("Arquivo de configuracao do Google ausente no pacote.");
 
                 byte[] rnd = new byte[32];
-                using (RandomNumberGenerator rng = RandomNumberGenerator.Create()) rng.GetBytes(rnd);
+                byte[] rndState = new byte[16];
+                using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+                {
+                    rng.GetBytes(rnd);
+                    rng.GetBytes(rndState);
+                }
                 string verifier = B64Url(rnd);
+                string state = B64Url(rndState);
                 byte[] chBytes;
                 using (SHA256 sha = SHA256.Create())
                     chBytes = sha.ComputeHash(Encoding.ASCII.GetBytes(verifier));
@@ -508,23 +712,41 @@ namespace DimensionamentoDeEnfermagem
                     "&redirect_uri=" + Uri.EscapeDataString(redirect) +
                     "&response_type=code" +
                     "&scope=" + Uri.EscapeDataString(Scopes) +
+                    "&state=" + Uri.EscapeDataString(state) +
                     "&code_challenge=" + challenge +
                     "&code_challenge_method=S256" +
                     "&access_type=offline&prompt=consent";
 
-                if (_popup == null)
-                    return Fail("Login Google disponivel somente no app instalado.");
+                string redirectUrl;
+                if (usePopup)
+                {
+                    if (_popup == null)
+                        return Fail("A janela de login nao esta disponivel. Use a opcao de conectar pelo navegador.");
+                    redirectUrl = await _popup(authUrl);
+                    if (string.IsNullOrEmpty(redirectUrl))
+                        return Fail("Login cancelado ou tempo esgotado. Se a janela do Google nao abriu, "
+                            + "use a opcao \"Conectar pelo navegador\".");
+                }
+                else
+                {
+                    redirectUrl = await WaitForOAuthRedirect(redirect, authUrl);
+                    if (string.IsNullOrEmpty(redirectUrl))
+                        return Fail("Login cancelado ou tempo esgotado. Tente novamente.");
+                }
 
-                string redirectUrl = await _popup(authUrl);
-                string code = null, authErr = null;
-                if (!string.IsNullOrEmpty(redirectUrl))
-                    TryParseAuthRedirect(redirectUrl, out code, out authErr);
+                string code = null, authErr = null, gotState = null;
+                TryParseAuthRedirect(redirectUrl, out code, out authErr, out gotState);
 
                 if (!string.IsNullOrEmpty(authErr))
-                    return Fail("Login recusado: " + authErr);
+                    return Fail(authErr == "access_denied"
+                        ? "Você cancelou a autorização no Google."
+                        : "Login recusado pelo Google: " + authErr);
 
                 if (string.IsNullOrEmpty(code))
-                    return Fail("Login cancelado ou tempo esgotado.");
+                    return Fail("O Google não devolveu o código de autorização. Tente novamente.");
+
+                if (!string.Equals(gotState, state, StringComparison.Ordinal))
+                    return Fail("A resposta do Google não confere com esta tentativa. Feche e tente novamente.");
 
                 FormUrlEncodedContent body = new FormUrlEncodedContent(new Dictionary<string, string>()
                 {
@@ -538,7 +760,7 @@ namespace DimensionamentoDeEnfermagem
                 HttpResponseMessage tr = await Http.PostAsync("https://oauth2.googleapis.com/token", body);
                 string ts = await tr.Content.ReadAsStringAsync();
                 if (!tr.IsSuccessStatusCode)
-                    return Fail("Token: " + Snip(ts));
+                    return Fail(DescribeTokenError(ts));
                 Dictionary<string, object> tok = Json.Deserialize<Dictionary<string, object>>(ts);
                 string access = Str(tok, "access_token");
                 string refresh = Str(tok, "refresh_token");
@@ -577,7 +799,7 @@ namespace DimensionamentoDeEnfermagem
             try
             {
                 string access = await AccessToken();
-                if (access == null) return Fail("Desconectado do Google.");
+                if (access == null) return Fail("A sessao do Google expirou. Desconecte e conecte novamente.");
 
                 string fileId = await FindBackup(access);
                 byte[] data = Encoding.UTF8.GetBytes(payloadJson ?? "{}");
@@ -634,7 +856,7 @@ namespace DimensionamentoDeEnfermagem
             try
             {
                 string access = await AccessToken();
-                if (access == null) return Fail("Desconectado do Google.");
+                if (access == null) return Fail("A sessao do Google expirou. Desconecte e conecte novamente.");
                 string fileId = await FindBackup(access);
                 if (fileId == null) return Fail("Nenhum backup na nuvem.");
                 HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Get,
@@ -692,7 +914,7 @@ namespace DimensionamentoDeEnfermagem
             try
             {
                 string access = await AccessToken();
-                if (access == null) return Fail("Desconectado do Google.");
+                if (access == null) return Fail("A sessao do Google expirou. Desconecte e conecte novamente.");
                 string url = "https://www.googleapis.com/drive/v3/files" +
                     "?spaces=appDataFolder" +
                     "&q=" + Uri.EscapeDataString("name='" + BackupName + "' and trashed=false") +
@@ -820,6 +1042,22 @@ namespace DimensionamentoDeEnfermagem
             if (s == null) return "";
             s = s.Replace("\r", " ").Replace("\n", " ");
             return s.Length > 220 ? s.Substring(0, 220) : s;
+        }
+
+        private static string DescribeTokenError(string ts)
+        {
+            string raw = ts ?? "";
+            if (raw.IndexOf("invalid_client", StringComparison.OrdinalIgnoreCase) >= 0)
+                return "O Google recusou a identificacao do aplicativo. Confira se o cliente OAuth e do tipo "
+                    + "\"Aplicativo para computador\" (Desktop app).";
+            if (raw.IndexOf("redirect_uri_mismatch", StringComparison.OrdinalIgnoreCase) >= 0)
+                return "A URL de retorno nao esta autorizada no cliente OAuth. Use um cliente Desktop e "
+                    + "mantenha http://localhost como retorno.";
+            if (raw.IndexOf("invalid_grant", StringComparison.OrdinalIgnoreCase) >= 0)
+                return "O codigo de autorizacao expirou ou ja foi usado. Tente conectar novamente.";
+            if (raw.IndexOf("invalid_scope", StringComparison.OrdinalIgnoreCase) >= 0)
+                return "A permissao drive.appdata nao esta habilitada na tela de consentimento do Google.";
+            return "Token: " + Snip(raw);
         }
     }
 }

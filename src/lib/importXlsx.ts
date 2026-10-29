@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import type { Absences, CategoryKey } from '../types';
 import { DEFAULT_DIRECT_TIMES, DEFAULT_INDIRECT, INDIRECT_ITEMS, PROCEDURES, defaultAbsences, emptyRecord } from './defaults';
 import { n } from './calc';
+import { normalizeWorkbook } from './xlsxNormalize';
 
 export interface ImportedCategory {
   production: Record<string, number>;
@@ -10,6 +11,12 @@ export interface ImportedCategory {
   absences: Absences | null;
   staffCount: number | null;
   names: string[];
+}
+
+export interface MonthlyTotal {
+  label: string;
+  iso: string;
+  total: number;
 }
 
 export interface ImportPreview {
@@ -23,6 +30,9 @@ export interface ImportPreview {
   enf: ImportedCategory | null;
   tec: ImportedCategory | null;
   totalProcedures: number | null;
+  coverageLabel?: string;
+  coverageMonths?: number;
+  monthlyTotals?: MonthlyTotal[];
   warnings: string[];
 }
 
@@ -159,10 +169,68 @@ function periodDates(tag: string): { startDate: string; endDate: string } {
   return { startDate: `${year}-08-01`, endDate: `${year + 1}-07-31` };
 }
 
+const MONTH_ABBR = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+function asDate(value: unknown): Date | null {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    // Data serial do Excel (sistema 1900), sempre em UTC para não deslocar o mês.
+    return new Date(Date.UTC(1899, 11, 30) + Math.round(value) * 86400000);
+  }
+  if (typeof value === 'string') {
+    const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return new Date(Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3])));
+  }
+  return null;
+}
+
+function monthLabel(date: Date): string {
+  return `${MONTH_ABBR[date.getUTCMonth()]}/${date.getUTCFullYear()}`;
+}
+
+/** Relatórios "Detalhamento de procedimentos": uma coluna por mês e o total na linha 3. */
+function readExportReport(ws: ExcelJS.Worksheet) {
+  const months: MonthlyTotal[] = [];
+  for (let col = 2; col <= ws.columnCount; col += 1) {
+    const date = asDate(cellValue(ws, 1, col));
+    if (!date) continue;
+    months.push({
+      label: monthLabel(date),
+      iso: date.toISOString().slice(0, 10),
+      total: num(ws, 3, col) ?? 0,
+    });
+  }
+  const total = months.reduce((sum, m) => sum + m.total, 0);
+  const coverageLabel = months.length
+    ? months.length === 1
+      ? months[0].label
+      : `${months[0].label} a ${months[months.length - 1].label}`
+    : '';
+  return {
+    unitName: text(ws, 3, 1),
+    months,
+    total,
+    coverageLabel,
+    coverageMonths: months.length,
+    startDate: months[0]?.iso ?? '',
+    endDate: months[months.length - 1]?.iso ?? '',
+  };
+}
+
+function looksLikeExportReport(ws: ExcelJS.Worksheet): boolean {
+  for (let row = 1; row <= 4; row += 1) {
+    for (let col = 1; col <= 6; col += 1) {
+      if (/total\s+procedimentos|m[eê]s\s*\/\s*ano/i.test(text(ws, row, col))) return true;
+    }
+  }
+  return false;
+}
+
 export async function readSpreadsheet(file: File): Promise<ImportPreview> {
   const wb = new ExcelJS.Workbook();
   const buffer = await file.arrayBuffer();
-  await wb.xlsx.load(buffer);
+  const normalized = await normalizeWorkbook(buffer);
+  await wb.xlsx.load(normalized);
   const { tag, label } = findTagAndPeriod(file.name, wb);
   const warnings: string[] = [];
 
@@ -174,28 +242,28 @@ export async function readSpreadsheet(file: File): Promise<ImportPreview> {
   const tecDim = pickSheet(wb, (name) => /^DIMENSIONAMENTO/i.test(name) && /T\.?\s*$/i.test(name), tag);
 
   if (!enfSheet && !tecSheet) {
-    const exportSheet = wb.worksheets.find((ws) => /export/i.test(ws.name)) ?? wb.worksheets[0];
-    if (exportSheet) {
-      const total = num(exportSheet, 3, 2);
-      let sum = 0;
-      for (let c = 2; c <= 30; c += 1) {
-        const v = num(exportSheet, 3, c);
-        if (v !== null) sum += v;
-      }
+    const exportSheet =
+      wb.worksheets.find((ws) => looksLikeExportReport(ws)) ??
+      wb.worksheets.find((ws) => /export/i.test(ws.name));
+    if (exportSheet && looksLikeExportReport(exportSheet)) {
+      const report = readExportReport(exportSheet);
       return {
         fileName: file.name,
         kind: 'procedimentos',
-        unitName: text(exportSheet, 3, 1),
-        periodLabel: label,
+        unitName: report.unitName,
+        periodLabel: report.coverageLabel || label,
         periodTag: tag,
-        ...periodDates(tag),
+        startDate: report.startDate || periodDates(tag).startDate,
+        endDate: report.endDate || periodDates(tag).endDate,
         enf: null,
         tec: null,
-        totalProcedures: total ?? sum,
-        warnings: [
-          'Esta planilha parece ser o "Detalhamento de procedimentos". Ela traz somente o total geral por mês, sem separar os 10 tipos de procedimento nem enfermeiros/técnicos.',
-          'Use-a para conferir o volume total. Para o dimensionamento completo, importe a planilha de dimensionamento.',
-        ],
+        totalProcedures: report.months.length ? report.total : null,
+        coverageLabel: report.coverageLabel,
+        coverageMonths: report.coverageMonths,
+        monthlyTotals: report.months,
+        warnings: report.months.length
+          ? []
+          : ['Não encontrei as datas dos meses na primeira linha do relatório.'],
       };
     }
     return {

@@ -4,6 +4,7 @@ import { normalizeWorkspace } from './storage';
 interface DriveBridge {
   GetState(): Promise<string>;
   Login(): Promise<string>;
+  LoginExternal?(): Promise<string>;
   Logout(): Promise<string>;
   CheckRemote(): Promise<string>;
   Upload(payload: string): Promise<string>;
@@ -16,6 +17,11 @@ interface DriveBridge {
 declare global {
   interface Window {
     dimensionamentoDrive?: DriveBridge;
+    chrome?: {
+      webview?: {
+        hostObjects?: Record<string, DriveBridge | undefined>;
+      };
+    };
   }
 }
 
@@ -41,8 +47,12 @@ export interface HostResult {
   payload?: string;
 }
 
-export const bridge = (): DriveBridge | undefined =>
-  typeof window !== 'undefined' ? window.dimensionamentoDrive : undefined;
+export const bridge = (): DriveBridge | undefined => {
+  if (typeof window === 'undefined') return undefined;
+  // O WebView2 expõe o host object em chrome.webview.hostObjects.<nome>.
+  // window.<nome> fica como atalho para testes e navegadores comuns.
+  return window.dimensionamentoDrive ?? window.chrome?.webview?.hostObjects?.dimensionamentoDrive;
+};
 
 export const cloudAvailable = (): boolean => Boolean(bridge());
 
@@ -71,6 +81,19 @@ export async function cloudLogin(): Promise<HostResult> {
   if (!host) return { ok: false, error: 'A conexão com o Google Drive está disponível na versão instalada para Windows.' };
   try {
     return parse<HostResult>(await host.Login(), { ok: false, error: 'Resposta inválida do aplicativo.' });
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/** Alternativa quando o Google recusa a janela interna: abre o navegador padrão. */
+export async function cloudLoginExternal(): Promise<HostResult> {
+  const host = bridge();
+  if (!host?.LoginExternal) {
+    return { ok: false, error: 'A conexão pelo navegador está disponível apenas na versão instalada mais recente.' };
+  }
+  try {
+    return parse<HostResult>(await host.LoginExternal(), { ok: false, error: 'Resposta inválida do aplicativo.' });
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
