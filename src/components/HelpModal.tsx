@@ -55,6 +55,34 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
         </section>
 
         <section>
+          <h3>Aproveitar um relatório de procedimentos</h3>
+          <p>
+            Se a unidade já exporta o “Detalhamento de procedimentos lançados” do e-SUS, o aplicativo
+            pode usar esse arquivo como <strong>base parcial</strong>. Ele soma a produção de cada
+            procedimento, agrupa nos dez grupos do dimensionamento e separa enfermeiros de
+            técnicos/auxiliares quando o relatório permite.
+          </p>
+          <ul className="bullet-list">
+            <li>
+              O detalhamento expandido e o relatório por profissional preenchem a produção. O por
+              estabelecimento e o total por mês servem somente para conferência.
+            </li>
+            <li>
+              Você escolhe a janela: último ano escolar completo (agosto a julho), últimos 12 meses ou
+              todo o período anualizado. O mês corrente fica de fora porque ainda pode estar incompleto.
+            </li>
+            <li>
+              Tempos médios, cuidados indiretos, ausências e quadro atual não vêm do relatório e
+              continuam para revisão. Imunizações também precisam ser preenchidas à mão.
+            </li>
+            <li>
+              Os nomes encontrados são sugestão: são pessoas que lançaram produção, não
+              necessariamente o quadro atual.
+            </li>
+          </ul>
+        </section>
+
+        <section>
           <h3>Palavras que aparecem no cálculo</h3>
           <dl className="glossary">
             <dt>TTD — Tempo de Trabalho Disponível</dt>
@@ -91,7 +119,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <li>Não é um sistema oficial do COFEN, do SUS ou de qualquer órgão público.</li>
             <li>Não é prontuário eletrônico e não guarda dados de pacientes.</li>
             <li>Não substitui a análise do enfermeiro responsável técnico.</li>
-            <li>Não distribui automaticamente a produção mensal entre os procedimentos.</li>
+            <li>Não inventa a distribuição da produção: quando o relatório não separa os grupos, nada é estimado.</li>
           </ul>
         </section>
 

@@ -74,7 +74,7 @@ function App() {
     }));
   };
 
-  const addProject = (next: Project, message: string) => {
+  const addProject = (next: Project, message: string, initialStep = 0) => {
     setWorkspace((ws) => ({
       ...ws,
       projects: [next, ...ws.projects],
@@ -82,7 +82,7 @@ function App() {
       updatedAt: stamp(),
     }));
     setScreen('project');
-    setStep(0);
+    setStep(initialStep);
     setModal(null);
     setToast({ tone: 'ok', text: message });
   };
@@ -132,6 +132,7 @@ function App() {
   };
 
   const applyImport = (next: Project, replace: boolean) => {
+    const partial = Boolean(next.partialOrigin);
     if (replace && project) {
       setWorkspace((ws) => ({
         ...ws,
@@ -140,10 +141,21 @@ function App() {
       }));
       setModal(null);
       setStep(2);
-      setToast({ tone: 'ok', text: 'Dados da planilha aplicados a este dimensionamento.' });
+      setToast({
+        tone: 'ok',
+        text: partial
+          ? 'Base parcial aplicada. Confira a produção e complete o que faltar.'
+          : 'Dados da planilha aplicados a este dimensionamento.',
+      });
       return;
     }
-    addProject(next, 'Dimensionamento criado a partir da planilha.');
+    addProject(
+      next,
+      partial
+        ? 'Dimensionamento criado com base parcial. Confira a produção e complete o que faltar.'
+        : 'Dimensionamento criado a partir da planilha.',
+      partial ? 2 : 0,
+    );
   };
 
   const applyRemote = (remote: Workspace, modifiedTime: number, hash: string) => {

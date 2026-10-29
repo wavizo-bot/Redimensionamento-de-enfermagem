@@ -1,5 +1,5 @@
 DIMENSIONAMENTO DE ENFERMAGEM — MANUAL DO PROJETO
-Atualizado em 28/10/2026 · versão do app 1.0.2 (MSIX 1.0.2.0)
+Atualizado em 29/10/2026 · versão do app 1.0.3 (MSIX 1.0.3.0)
 ===============================================================================
 
 1. O QUE É
@@ -32,10 +32,15 @@ Versões:
 - 1.0.0 / 1.0.0.0 — publicada na Microsoft Store (a assinatura é da Store; o
   pacote local não pode ser substituído por sideload).
 - 1.0.1 / 1.0.1.0 — gerada em 28/10/2026 e não enviada; substituída pela 1.0.2.
-- 1.0.2 / 1.0.2.0 — atual, gerada em 28/10/2026. Corrige a leitura do relatório
+- 1.0.2 / 1.0.2.0 — gerada em 28/10/2026. Corrige a leitura do relatório
   expandido “Detalhamento de procedimentos lançados” (por profissional e
   procedimento), mostra totais por categoria e últimos 12 meses, e documenta as
-  regras de publicação no GitHub. A próxima versão enviada deve ser maior.
+  regras de publicação no GitHub.
+- 1.0.3 / 1.0.3.0 — atual, gerada em 29/10/2026. Usa os relatórios de
+  procedimentos como base parcial: agrupa a produção nos dez grupos do WISN,
+  separa enfermeiros e técnicos, oferece as janelas de ano escolar, últimos 12
+  meses e período anualizado, e deixa tempos, indiretos, ausências, quadro atual
+  e imunizações para revisão. A próxima versão enviada deve ser maior.
 
 3. ESTRUTURA DE PASTAS
 ======================
@@ -47,6 +52,8 @@ src/
     defaults.ts              Procedimentos, tempos, indiretos, projeto exemplo
     storage.ts               localStorage + normalização do workspace
     importXlsx.ts            Leitura da planilha oficial e dos relatórios de procedimentos
+    procedureMap.ts          Mapeamento dos procedimentos do e-SUS nos dez grupos do WISN
+    importBuild.ts           Aplicação da planilha completa ou da base parcial ao projeto
     xlsxNormalize.ts         Normaliza OOXML fora do padrão antes do ExcelJS
     exportXlsx.ts            Geração do Excel de 4 abas com fórmulas e cache
     drive.ts                 Ponte JS <-> host (OAuth/Drive/exportar)
@@ -91,10 +98,26 @@ referências `r` de linha/célula quando o arquivo não as traz. Sem isso, o
 ExcelJS falha com "Cannot read properties of undefined (reading 'sheets')" ou
 "Invalid row number in model". A planilha em si não é alterada no disco.
 
-Relatórios "Detalhamento de procedimentos lançados": quando não existem as abas
-de enfermeiros/técnicos, o app procura "MES/ANO" e "TOTAL PROCEDIMENTOS",
-resume os totais por mês e explica que o arquivo não tem granularidade para o
-cálculo. Nada é distribuído por procedimento por suposição.
+Relatórios "Detalhamento de procedimentos lançados": o app reconhece quatro
+formatos — agregado (total por mês), expandido (unidade/ocupação/profissional/
+procedimento), por profissional e por estabelecimento. O expandido e o por
+profissional viram base parcial: os procedimentos são agrupados nos dez grupos
+do WISN, separando enfermeiros e técnicos/auxiliares. O por estabelecimento e o
+agregado servem somente para conferência, porque misturam profissões ou não têm
+o detalhe por procedimento.
+
+Na base parcial o usuário escolhe a janela de produção:
+  - último ano escolar completo (agosto a julho);
+  - últimos 12 meses completos;
+  - todo o período, anualizado por 12/meses.
+O mês corrente é excluído das janelas porque ainda pode estar incompleto. A base
+parcial preenche somente a produção: tempos médios, indiretos, ausências e
+quadro atual continuam com os valores padrão ou com o que já estava no projeto.
+Imunizações nunca são zeradas, pois o export do e-SUS não traz vacinas. Os nomes
+encontrados são oferecidos como sugestão de equipe (são autores de produção, não
+necessariamente o quadro atual). Procedimentos não mapeados aparecem na janela
+de importação e ficam fora da produção até revisão manual. O projeto guarda a
+origem parcial e o status de revisão, mostrados nas etapas 3 e 5.
 
 Exportação (4 abas):
   DIMENSIONAMENTO -ENF - <tag>   (nome exato exigido, máx. 31 caracteres)
@@ -149,7 +172,7 @@ C:\APPS\Caderno de Cuidado\MSIX\staging (fonte padrão do parâmetro
 -WebView2Source).
 
   powershell -ExecutionPolicy Bypass -File msix\Build-MSIX.ps1
-  powershell -ExecutionPolicy Bypass -File msix\Build-MSIX.ps1 -Version 1.0.2.0
+  powershell -ExecutionPolicy Bypass -File msix\Build-MSIX.ps1 -Version 1.0.3.0
 
 O script: npm build -> dist copiado para staging\www e docs\app -> ícones ->
 csc do Launcher.cs -> AppxManifest com a versão -> client OAuth -> makeappx ->
@@ -168,6 +191,10 @@ Verificação de cálculo/importação/exportação:
   npx esbuild tools/verify.ts --bundle --platform=node --format=cjs
     --target=node18 --outfile=tools/verify.cjs
   node tools/verify.cjs
+
+Os relatórios reais usados nos testes (expandido, por profissional e por
+estabelecimento) ficam em teste/ ou em Downloads. A pasta teste/ é ignorada pelo
+git; quando os arquivos não existem, a verificação mostra SKIP.
 
 8. ARMADILHAS CONHECIDAS
 ========================
@@ -213,6 +240,9 @@ Em 28/10/2026 a versão 1.0.2 foi publicada no Pages (commit 389174f): landing,
 /app/, documentos legais, imagens e assets novos responderam 200; landing e app
 mostram v1.0.2. A landing também tem URL canônica, Open Graph/Twitter Card,
 imagem social 1200x630, robots.txt e sitemap.xml (commit 1129f8b).
+Em 29/10/2026 a landing e o guia interno passaram a explicar a base parcial a
+partir dos relatórios de procedimentos (quatro formatos e janelas de produção).
+A versão 1.0.3 é publicada junto com essa atualização.
 As páginas legais ficam somente em docs/ (fonte única, já publicada).
 
 A política cita a Google API Services User Data Policy / Limited Use, exigida
@@ -221,7 +251,7 @@ oficial, prontuário ou dispositivo médico.
 
 10. PENDÊNCIAS
 ==============
-- Enviar o MSIX 1.0.2.0 ao Partner Center (Store ID 9MV9H9HPQ0HB) e atualizar a
+- Enviar o MSIX 1.0.3.0 ao Partner Center (Store ID 9MV9H9HPQ0HB) e atualizar a
   listagem. Pacote pronto em entregas/partner-center/ (MSIX, artes, capturas e
   textos). A Store reassina no envio; não é possível instalar por sideload
   sobre o pacote assinado pela Store.

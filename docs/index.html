@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dimensionamento de Enfermagem · WISN/WPSN</title>
-<meta name="description" content="Aplicativo para Windows que calcula o quadro de enfermeiros e técnicos pelo método WISN/WPSN (Parecer Normativo COFEN 1/2024), importa e exporta as planilhas do dimensionamento.">
+<meta name="description" content="Aplicativo para Windows que calcula o quadro de enfermeiros e técnicos pelo método WISN/WPSN (Parecer Normativo COFEN 1/2024). Importa a planilha atual ou aproveita relatórios de procedimentos e exporta as abas do dimensionamento.">
 <meta name="theme-color" content="#0F6B5C">
 <meta property="og:title" content="Dimensionamento de Enfermagem · WISN/WPSN">
-<meta property="og:description" content="Produção, equipe, ausências e resultado em um só lugar. Importa a planilha atual e exporta as abas oficiais do dimensionamento.">
+<meta property="og:description" content="Produção, equipe, ausências e resultado em um só lugar. Aproveita a planilha atual e relatórios de procedimentos, e exporta as abas do dimensionamento.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://wavizo-bot.github.io/Redimensionamento-de-enfermagem/">
 <meta property="og:image" content="https://wavizo-bot.github.io/Redimensionamento-de-enfermagem/assets/og-1200x630.png">
@@ -16,7 +16,7 @@
 <meta property="og:site_name" content="Dimensionamento de Enfermagem">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Dimensionamento de Enfermagem · WISN/WPSN">
-<meta name="twitter:description" content="Produção, equipe, ausências e resultado em um só lugar. Importa a planilha atual e exporta as abas oficiais do dimensionamento.">
+<meta name="twitter:description" content="Produção, equipe, ausências e resultado em um só lugar. Aproveita a planilha atual e relatórios de procedimentos, e exporta as abas do dimensionamento.">
 <meta name="twitter:image" content="https://wavizo-bot.github.io/Redimensionamento-de-enfermagem/assets/og-1200x630.png">
 <link rel="canonical" href="https://wavizo-bot.github.io/Redimensionamento-de-enfermagem/">
 <link rel="icon" href="app/icon.svg" type="image/svg+xml">
@@ -589,7 +589,7 @@
       </div>
       <div class="card">
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12"/><path d="m7 11 5 5 5-5"/><path d="M4 18v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/></svg></div>
-        <h3>Exportação com os nomes oficiais</h3>
+        <h3>Exportação com os nomes esperados</h3>
         <p>As abas saem com o período no nome, no mesmo formato usado no documento do dimensionamento.</p>
         <ul>
           <li><code>DIMENSIONAMENTO -ENF - 20252026</code></li>
@@ -600,12 +600,12 @@
       <div class="card">
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.2 3.5 3.5 0 0 0 7 18Z"/></svg></div>
         <h3>Relatório de procedimentos</h3>
-        <p>O extrato “Detalhamento de procedimentos lançados” é lido nos dois formatos: total por mês ou detalhado por profissional e procedimento.</p>
+        <p>O extrato “Detalhamento de procedimentos lançados” pode virar uma base parcial: o aplicativo aproveita a produção por grupo e deixa o restante para revisão.</p>
         <ul>
-          <li>Totais mensais, média do período e gráfico.</li>
-          <li>Separação por enfermeiros, técnicos e outras ocupações quando o arquivo detalha.</li>
-          <li>Explicação do que ainda falta para virar dimensionamento.</li>
-          <li>Nada é inventado quando o detalhe não existe no arquivo.</li>
+          <li>Lê o detalhamento expandido, por profissional e por estabelecimento.</li>
+          <li>Agrupa os procedimentos nos dez grupos do dimensionamento e separa enfermeiros e técnicos.</li>
+          <li>Escolhe a janela: ano escolar (ago–jul), últimos 12 meses ou todo o período anualizado.</li>
+          <li>Mostra o que ficou fora do mapeamento e lembra que imunizações são preenchidas à mão.</li>
         </ul>
       </div>
     </div>
@@ -706,11 +706,12 @@
             mostra um resumo do que encontrou antes de aplicar.
           </p>
           <p>
-            O relatório pode vir em dois formatos. O resumido traz apenas o total de procedimentos
-            por mês; o expandido traz uma linha por profissional e procedimento. O aplicativo lê os
-            dois e mostra totais mensais, por categoria e dos últimos 12 meses. Nenhum deles permite
-            calcular o quadro sozinho: faltam o agrupamento nos dez grupos do WISN, os tempos médios,
-            as atividades indiretas, as ausências e o quadro atual.
+            O relatório pode vir em quatro formatos: detalhamento expandido, quantidade por profissional,
+            quantidade por estabelecimento e total por mês. Os dois primeiros permitem aproveitar a
+            produção por grupo; o por estabelecimento e o total por mês servem para conferência. O
+            aplicativo agrupa os procedimentos nos dez grupos do WISN, mostra o que não foi mapeado e
+            escolhe a janela de 12 meses. Tempos médios, atividades indiretas, ausências, quadro atual e
+            imunizações continuam para revisão manual.
           </p>
         </div>
       </details>
@@ -798,7 +799,7 @@
 
 <footer>
   <div class="wrap">
-    <p>© 2026 wavizo · Dimensionamento de Enfermagem · v1.0.2</p>
+    <p>© 2026 wavizo · Dimensionamento de Enfermagem · v1.0.3</p>
     <nav aria-label="Links legais">
       <a href="politica-de-privacidade.html">Privacidade</a>
       <a href="termos-de-servico.html">Termos</a>

@@ -137,6 +137,32 @@ export function ResultsView({
         </div>
       </header>
 
+      {project.partialOrigin ? (
+        <div className={`callout ${project.partialOrigin.reviewed ? 'callout-info' : 'callout-warn'}`}>
+          <Icon name={project.partialOrigin.reviewed ? 'info' : 'alert'} />
+          <div>
+            <strong>
+              {project.partialOrigin.reviewed
+                ? 'Resultado calculado com base parcial revisada'
+                : 'Resultado calculado com base parcial — revisão pendente'}
+            </strong>
+            <p>
+              A produção de enfermeiros e técnicos veio de uma base parcial ({project.partialOrigin.formatLabel}),
+              na janela <strong>{project.partialOrigin.windowLabel}</strong> ({project.partialOrigin.rangeLabel}
+              {project.partialOrigin.annualized ? ', ajustada para 12 meses' : ''}). Os tempos médios, os
+              cuidados indiretos, as ausências e o quadro atual foram mantidos e devem ser conferidos pelo
+              responsável técnico.
+            </p>
+            {!project.partialOrigin.reviewed ? (
+              <p>
+                Volte à etapa 3 para revisar a produção e marcar a revisão como concluída. O resultado
+                abaixo é uma referência enquanto a revisão estiver pendente.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       {!result.hasProduction ? (
         <div className="callout callout-warn">
           <Icon name="alert" />

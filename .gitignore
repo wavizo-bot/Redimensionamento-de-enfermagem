@@ -19,7 +19,11 @@ google-token.dat
 # Documentacao de trabalho
 log.txt
 tools/verify.cjs
+tools/tmp-*
 inspect*.cjs
+
+# Relatorios reais usados nos testes locais (nao versionar)
+teste/
 
 # Materiais de pesquisa locais (nao fazem parte do produto)
 cofen12024*.pdf

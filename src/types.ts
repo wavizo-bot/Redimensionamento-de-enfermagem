@@ -60,6 +60,21 @@ export interface ProjectSettings {
   hoursPerDay: number;
 }
 
+/** Origem da produção quando ela veio de um relatório parcial de procedimentos. */
+export interface PartialOrigin {
+  fileName: string;
+  format: 'expanded' | 'professional';
+  formatLabel: string;
+  windowLabel: string;
+  rangeLabel: string;
+  months: number;
+  annualized: boolean;
+  unmappedEnf: number;
+  unmappedTec: number;
+  importedAt: string;
+  reviewed: boolean;
+}
+
 export interface Project {
   id: string;
   unitName: string;
@@ -80,6 +95,8 @@ export interface Project {
   signatureDate: string;
   createdAt: string;
   updatedAt: string;
+  /** Presente quando a produção foi preenchida por uma base parcial. */
+  partialOrigin?: PartialOrigin | null;
 }
 
 export interface SyncInfo {

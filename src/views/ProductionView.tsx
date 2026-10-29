@@ -5,6 +5,10 @@ import { calcCategory } from '../lib/calc';
 import { Icon } from '../components/Icons';
 import { Help, NumberField } from '../components/ui';
 
+function formatNumber(value: number): string {
+  return value.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+}
+
 export function ProductionView({
   project,
   onPatch,
@@ -36,6 +40,9 @@ export function ProductionView({
 
   const totalProduction = PROCEDURES.reduce((s, p) => s + (cfg.production[p.key] || 0), 0);
   const resetTimes = () => patchCategory({ directTimes: { ...DEFAULT_DIRECT_TIMES[tab] } });
+  const origin = project.partialOrigin;
+  const markReviewed = () =>
+    origin && onPatch({ partialOrigin: { ...origin, reviewed: true } });
 
   return (
     <div className="view">
@@ -52,6 +59,42 @@ export function ProductionView({
           <Icon name="upload" size={17} /> Importar do Excel
         </button>
       </header>
+
+      {origin ? (
+        origin.reviewed ? (
+          <p className="table-note">
+            <Icon name="check" size={15} /> Produção vinda de uma base parcial revisada ·{' '}
+            {origin.windowLabel}, {origin.months} {origin.months === 1 ? 'mês' : 'meses'} · origem:{' '}
+            {origin.formatLabel}.
+          </p>
+        ) : (
+          <div className="callout callout-warn">
+            <Icon name="alert" />
+            <div>
+              <strong>Produção vinda de uma base parcial</strong>
+              <p>
+                {origin.formatLabel} · {origin.windowLabel} · {origin.months}{' '}
+                {origin.months === 1 ? 'mês' : 'meses'}
+                {origin.annualized ? ' (valores ajustados para 12 meses)' : ''}. Os tempos médios,
+                os cuidados indiretos, as ausências e o quadro atual não vieram do relatório.
+              </p>
+              <ul className="report-missing">
+                <li>Confira cada grupo e complete os que ficaram zerados, como Imunizações.</li>
+                {origin.unmappedEnf + origin.unmappedTec > 0 ? (
+                  <li>
+                    {formatNumber(origin.unmappedEnf + origin.unmappedTec)} lançamentos não foram
+                    mapeados e ficaram fora da produção.
+                  </li>
+                ) : null}
+                <li>Depois de revisar os números, marque a revisão como concluída.</li>
+              </ul>
+              <button className="btn btn-small btn-ghost" onClick={markReviewed}>
+                <Icon name="check" size={15} /> Marcar revisão como concluída
+              </button>
+            </div>
+          </div>
+        )
+      ) : null}
 
       <div className="production-switch">
         <div className="segmented">

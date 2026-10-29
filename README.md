@@ -19,9 +19,13 @@ Site do projeto: https://wavizo-bot.github.io/Redimensionamento-de-enfermagem/
   `DIMENSIONAMENTO - 20252026 - T.`) com preenchimento automático dos campos.
 - Normalização de OOXML fora do padrão (prefixo `x:` e células sem referência),
   comum em arquivos gerados por outros sistemas.
-- Leitura do relatório "Detalhamento de procedimentos lançados" nos formatos
-  resumido (total por mês) e expandido (por profissional e procedimento), com
-  totais mensais, por categoria, últimos 12 meses e gráfico.
+- Leitura do relatório "Detalhamento de procedimentos lançados" nos quatro
+  formatos: agregado (total por mês), expandido, por profissional e por
+  estabelecimento.
+- Base parcial a partir do detalhamento expandido ou por profissional: agrupa
+  os procedimentos nos dez grupos do WISN, separa enfermeiros e técnicos, escolhe
+  a janela (ano escolar, últimos 12 meses ou período anualizado) e deixa tempos,
+  indiretos, ausências, quadro atual e imunizações para revisão manual.
 - Exportação em Excel com as abas:
   - `DIMENSIONAMENTO -ENF - 20252026`
   - `DIMENSIONAMENTO - 20252026 - T.`
@@ -71,6 +75,9 @@ npx esbuild tools/verify.ts --bundle --platform=node --format=cjs --target=node1
 node tools/verify.cjs
 ```
 
+Os relatórios reais usados nos testes ficam em `teste/` (ignorado pelo git) ou
+em Downloads; quando não existem, a verificação apenas mostra `SKIP`.
+
 ## Build do MSIX
 
 Pré-requisitos:
@@ -81,7 +88,7 @@ Pré-requisitos:
 - DLLs do WebView2 (copiadas do staging local no build)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File msix/Build-MSIX.ps1 -Version 1.0.2.0
+powershell -ExecutionPolicy Bypass -File msix/Build-MSIX.ps1 -Version 1.0.3.0
 ```
 
 O pacote é gerado em `msix/output/` e a versão web em `docs/app/`.
@@ -94,7 +101,7 @@ reassina o pacote na publicação.
 - Nome: `wavizo.Dimensionamentodeenfermagem`
 - Publisher: `CN=57BB464E-553F-45B6-A4ED-B253157408EB`
 - PublisherDisplayName: `wavizo`
-- Versão: `1.0.2.0`
+- Versão: `1.0.3.0`
 
 ## Privacidade e dados
 

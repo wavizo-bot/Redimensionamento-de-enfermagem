@@ -179,6 +179,7 @@ export const makeProject = (partial: Partial<Project> = {}): Project => {
     signatureDate: isoDate(now),
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
+    partialOrigin: null,
   };
   return { ...project, ...partial };
 };
